@@ -6,8 +6,8 @@ plugins {
     alias(libs.plugins.kotlinx.serialization) apply false
 }
 
-tasks {
-    val clean by register<Delete>("clean") {
-        delete(rootProject.layout.buildDirectory)
-    }
-}
+//tasks {
+//    val clean by register<Delete>("clean") {
+//        delete(rootProject.layout.buildDirectory)
+//    }
+//}

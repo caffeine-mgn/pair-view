@@ -1,3 +1,4 @@
+@file:JvmName("JvmMain")
 package pw.binom
 
 import kotlinx.coroutines.GlobalScope

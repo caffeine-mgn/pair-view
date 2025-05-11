@@ -7,6 +7,7 @@ import kotlinx.serialization.json.Json
 import pw.binom.dto.GlassesDto
 import pw.binom.dto.JumpDto
 import pw.binom.dto.OpenFileDto
+import pw.binom.dto.PlaybackState
 import pw.binom.dto.UpdateViewDto
 import pw.binom.io.httpServer.HttpHandler
 import pw.binom.io.httpServer.HttpServerExchange
@@ -22,6 +23,7 @@ class ClientController : HttpHandler {
     private val actionsOpenFile = "/api/clients/{id}/actions/openFile".toPathMask()
     private val actionsSeek = "/api/clients/{id}/actions/seek".toPathMask()
     private val getFiles = "/api/clients/{id}/files".toPathMask()
+    private val getState = "/api/clients/{id}/state".toPathMask()
     private val updateView = "/api/clients/{id}/config/view".toPathMask()
     override suspend fun handle(exchange: HttpServerExchange) {
         when {
@@ -41,6 +43,10 @@ class ClientController : HttpHandler {
 
             exchange.requestMethod == "GET" && exchange.requestURI.path.isMatch(getFiles) -> getFiles(
                 clientId = exchange.requestURI.path.getVariables(getFiles)!!["id"]!!,
+                exchange = exchange,
+            )
+            exchange.requestMethod == "GET" && exchange.requestURI.path.isMatch(getState) -> getState(
+                clientId = exchange.requestURI.path.getVariables(getState)!!["id"]!!,
                 exchange = exchange,
             )
 
@@ -84,6 +90,27 @@ class ClientController : HttpHandler {
         }
         exchange.response().also {
             it.sendJson(ListSerializer(String.serializer()), glasses.getFiles())
+        }
+    }
+
+    suspend fun getState(clientId: String, exchange: HttpServerExchange) {
+        val glasses = glassesService.findById(clientId)
+        if (glasses == null) {
+            exchange.response().also {
+                it.status = 400
+                it.send("Glasses with id $clientId not found")
+                return
+            }
+        }
+        val state = glasses.getState()
+        exchange.response().also {
+            it.sendJson(
+                PlaybackState.serializer(), PlaybackState(
+                    videoFile = state.videoFile,
+                    playing = state.playing,
+                    time = state.time,
+                )
+            )
         }
     }
 
@@ -166,7 +193,7 @@ class ClientController : HttpHandler {
 suspend fun <T> HttpServerResponse.sendJson(
     serializer: KSerializer<T>,
     value: T,
-    json: Json = Json
+    json: Json = Json,
 ) {
     status = 200
     headers.contentType = "application/json"
