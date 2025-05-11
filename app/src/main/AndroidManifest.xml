@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
+    <application
+        android:name="com.rayneo.arsdk.android.demo.MercuryDemoApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:hardwareAccelerated="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MercuryAndroidSDK"
+        tools:targetApi="31">
+
+        <!-- indicate this is an app that supports RayNeoX2 glasses -->
+        <meta-data
+            android:name="com.rayneo.mercury.app"
+            android:value="true" />
+
+        <activity
+            android:name="com.rayneo.arsdk.android.demo.DemoHomeActivity"
+            android:exported="true"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.rayneo.arsdk.android.demo.ui.activity.DialogActivity"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.rayneo.arsdk.android.demo.ui.activity.FixedFocusPosRVActivity"
+            android:screenOrientation="landscape" />
+
+        <activity
+            android:name="com.rayneo.arsdk.android.demo.ui.activity.MovedFocusPosRVActivity"
+            android:screenOrientation="landscape" />
+
+        <activity
+            android:name="com.rayneo.arsdk.android.demo.ui.activity.FragmentDemoActivity"
+            android:screenOrientation="landscape" />
+
+        <activity
+            android:name="com.rayneo.arsdk.android.demo.ui.activity.VideoPlayerActivity"
+            android:screenOrientation="landscape" />
+
+        <activity
+            android:name="com.rayneo.arsdk.android.demo.ui.activity.MyActivity2"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name="com.rayneo.arsdk.android.demo.ui.activity.MyTestActivity"
+            android:screenOrientation="landscape" />
+
+    </application>
+
+</manifest>

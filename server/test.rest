@@ -1,0 +1,10 @@
+### Get glasses
+GET http://localhost:8080/clients
+
+### Get glasses
+POST http://localhost:8080/clients/{id}/actions/openFile
+Content-Type: application/json
+
+{
+    "name": ""
+}

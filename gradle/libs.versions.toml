@@ -1,0 +1,32 @@
+[versions]
+kotlin = "2.1.20"
+binom-io = "1.0.0-SNAPSHOT"
+kotlinx-serialization = "1.8.1"
+kotlinx-coroutines = "1.10.2"
+android = "8.9.1"
+
+[libraries]
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
+kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlinx-serialization" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-serialization" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-serialization" }
+binom-io-core = { module = "pw.binom.io:core", version.ref = "binom-io" }
+binom-io-file = { module = "pw.binom.io:file", version.ref = "binom-io" }
+binom-io-date = { module = "pw.binom.io:date", version.ref = "binom-io" }
+binom-io-strong-webServer = { module = "pw.binom.io:strong-web-server", version.ref = "binom-io" }
+binom-io-strong-properties-yaml = { module = "pw.binom.io:strong-properties-yaml", version.ref = "binom-io" }
+binom-io-strong-properties-ini = { module = "pw.binom.io:strong-properties-ini", version.ref = "binom-io" }
+binom-io-signal = { module = "pw.binom.io:signal", version.ref = "binom-io" }
+binom-io-logger = { module = "pw.binom.io:logger", version.ref = "binom-io" }
+binom-io-http-client = { module = "pw.binom.io:httpClient", version.ref = "binom-io" }
+binom-io-http-server-rest = { module = "pw.binom.io:http-server-rest", version.ref = "binom-io" }
+binom-io-network = { module = "pw.binom.io:network", version.ref = "binom-io" }
+
+[plugins]
+android-application = {id = "com.android.application", version.ref = "android"}
+android-library = {id = "com.android.library", version.ref = "android"}
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
