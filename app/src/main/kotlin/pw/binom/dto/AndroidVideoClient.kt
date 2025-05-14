@@ -1,5 +1,5 @@
 package pw.binom.dto
-
+/*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.cancelAndJoin
@@ -83,3 +83,4 @@ class AndroidVideoClient(
     }
 
 }
+*/

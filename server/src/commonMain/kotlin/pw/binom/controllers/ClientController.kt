@@ -8,16 +8,17 @@ import pw.binom.dto.GlassesDto
 import pw.binom.dto.JumpDto
 import pw.binom.dto.OpenFileDto
 import pw.binom.dto.PlaybackState
+import pw.binom.dto.Response
 import pw.binom.dto.UpdateViewDto
 import pw.binom.io.httpServer.HttpHandler
 import pw.binom.io.httpServer.HttpServerExchange
 import pw.binom.io.httpServer.HttpServerResponse
-import pw.binom.services.GlassesService
+import pw.binom.services.DevicesService
 import pw.binom.strong.inject
 import pw.binom.url.toPathMask
-
+/*
 class ClientController : HttpHandler {
-    private val glassesService: GlassesService by inject()
+    private val devicesService: DevicesService by inject()
     private val actionsPlay = "/api/clients/{id}/actions/play".toPathMask()
     private val actionsPause = "/api/clients/{id}/actions/pause".toPathMask()
     private val actionsOpenFile = "/api/clients/{id}/actions/openFile".toPathMask()
@@ -45,6 +46,7 @@ class ClientController : HttpHandler {
                 clientId = exchange.requestURI.path.getVariables(getFiles)!!["id"]!!,
                 exchange = exchange,
             )
+
             exchange.requestMethod == "GET" && exchange.requestURI.path.isMatch(getState) -> getState(
                 clientId = exchange.requestURI.path.getVariables(getState)!!["id"]!!,
                 exchange = exchange,
@@ -68,117 +70,134 @@ class ClientController : HttpHandler {
     }
 
     suspend fun getClients(exchange: HttpServerExchange) {
-        val glasses = glassesService.glasses.map {
+        val glasses = devicesService.glasses.map {
             GlassesDto(
                 id = it.id,
                 name = it.name,
             )
         }
         exchange.response().also {
-            it.sendJson(ListSerializer(GlassesDto.serializer()), glasses)
+            it.sendJson(
+                Response.serializer(ListSerializer(GlassesDto.serializer())),
+                Response.success(glasses)
+            )
         }
     }
 
     suspend fun getFiles(clientId: String, exchange: HttpServerExchange) {
-        val glasses = glassesService.findById(clientId)
+        val glasses = devicesService.findById(clientId)
         if (glasses == null) {
-            exchange.response().also {
-                it.status = 400
-                it.send("Glasses with id $clientId not found")
-                return
-            }
+            exchange.sendJson(
+                Response.serializer(Unit.serializer()),
+                Response.fail("Client not found")
+            )
+            return
         }
-        exchange.response().also {
-            it.sendJson(ListSerializer(String.serializer()), glasses.getFiles())
-        }
+        exchange.sendJson(
+            Response.serializer(ListSerializer(String.serializer())),
+            Response.success(glasses.getFiles())
+        )
     }
 
     suspend fun getState(clientId: String, exchange: HttpServerExchange) {
-        val glasses = glassesService.findById(clientId)
+        val glasses = devicesService.findById(clientId)
         if (glasses == null) {
-            exchange.response().also {
-                it.status = 400
-                it.send("Glasses with id $clientId not found")
-                return
-            }
+            exchange.sendJson(
+                Response.serializer(Unit.serializer()),
+                Response.fail("Client not found")
+            )
+            return
         }
         val state = glasses.getState()
-        exchange.response().also {
-            it.sendJson(
-                PlaybackState.serializer(), PlaybackState(
+        exchange.sendJson(
+            Response.serializer(PlaybackState.serializer()),
+            Response.success(
+                PlaybackState(
                     videoFile = state.videoFile,
                     playing = state.playing,
                     time = state.time,
                 )
             )
-        }
+        )
     }
 
     suspend fun seek(clientId: String, exchange: HttpServerExchange) {
-        val glasses = glassesService.findById(clientId)
+        val glasses = devicesService.findById(clientId)
         if (glasses == null) {
-            exchange.response().also {
-                it.status = 400
-                it.send("Glasses with id $clientId not found")
-                return
-            }
+            exchange.sendJson(
+                Response.serializer(Unit.serializer()),
+                Response.fail("Client not found")
+            )
+            return
         }
         val dto = Json.decodeFromString(JumpDto.serializer(), exchange.readAllText())
         glasses.seek(time = dto.time)
-        exchange.startResponse(200)
+        exchange.sendJson(
+            Response.serializer(Unit.serializer()),
+            Response.success()
+        )
     }
 
     suspend fun openFile(clientId: String, exchange: HttpServerExchange) {
-        val glasses = glassesService.findById(clientId)
+        val glasses = devicesService.findById(clientId)
         if (glasses == null) {
-            exchange.response().also {
-                it.status = 400
-                it.send("Glasses with id $clientId not found")
-                return
-            }
+            exchange.sendJson(
+                Response.serializer(Unit.serializer()),
+                Response.fail("Client not found")
+            )
+            return
         }
         val dto = Json.decodeFromString(OpenFileDto.serializer(), exchange.readAllText())
         glasses.play(file = dto.name, time = 0)
-        exchange.startResponse(200)
+        exchange.sendJson(
+            Response.serializer(Unit.serializer()),
+            Response.success()
+        )
     }
 
     suspend fun actionPlay(clientId: String, exchange: HttpServerExchange) {
-        val glasses = glassesService.findById(clientId)
+        val glasses = devicesService.findById(clientId)
         if (glasses == null) {
-            exchange.response().also {
-                it.status = 400
-                it.send("Glasses with id $clientId not found")
-                return
-            }
+            exchange.sendJson(
+                Response.serializer(Unit.serializer()),
+                Response.fail("Client not found")
+            )
+            return
         }
         val state = glasses.getState()
         glasses.play(time = state.time)
-        exchange.startResponse(200)
+        exchange.sendJson(
+            Response.serializer(Unit.serializer()),
+            Response.success()
+        )
     }
 
     suspend fun actionPause(clientId: String, exchange: HttpServerExchange) {
-        val glasses = glassesService.findById(clientId)
+        val glasses = devicesService.findById(clientId)
         if (glasses == null) {
-            exchange.response().also {
-                it.status = 400
-                it.send("Glasses with id $clientId not found")
-                return
-            }
+            exchange.sendJson(
+                Response.serializer(Unit.serializer()),
+                Response.fail("Client not found")
+            )
+            return
         }
 
         val state = glasses.getState()
         glasses.pause(time = state.time)
-        exchange.startResponse(200)
+        exchange.sendJson(
+            Response.serializer(Unit.serializer()),
+            Response.success()
+        )
     }
 
     suspend fun updateView(clientId: String, exchange: HttpServerExchange) {
-        val glasses = glassesService.findById(clientId)
+        val glasses = devicesService.findById(clientId)
         if (glasses == null) {
-            exchange.response().also {
-                it.status = 400
-                it.send("Glasses with id $clientId not found")
-                return
-            }
+            exchange.sendJson(
+                Response.serializer(Unit.serializer()),
+                Response.fail("Client not found")
+            )
+            return
         }
 
         val dto = Json.decodeFromString(UpdateViewDto.serializer(), exchange.readAllText())
@@ -186,7 +205,34 @@ class ClientController : HttpHandler {
             padding = dto.padding,
             align = dto.align,
         )
-        exchange.startResponse(200)
+        exchange.sendJson(
+            Response.serializer(Unit.serializer()),
+            Response.success()
+        )
+    }
+}
+*/
+//@OptIn(InternalSerializationApi::class)
+//suspend inline fun <reified T : Any> HttpServerResponse.sendJson(
+//    value: T,
+//    json: Json = Json,
+//) = sendJson(
+//    serializer = T::class.serializer(),
+//    value = value,
+//    json = json
+//)
+
+suspend fun <T> HttpServerExchange.sendJson(
+    serializer: KSerializer<T>,
+    value: T,
+    json: Json = Json,
+) {
+    response().also {
+        it.sendJson(
+            serializer = serializer,
+            value = value,
+            json = json,
+        )
     }
 }
 

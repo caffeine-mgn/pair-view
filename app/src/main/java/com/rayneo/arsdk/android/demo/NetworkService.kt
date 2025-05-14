@@ -1,5 +1,5 @@
 package com.rayneo.arsdk.android.demo
-
+/*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -45,3 +45,4 @@ object NetworkService {
         networkManager = null
     }
 }
+*/

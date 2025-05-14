@@ -12,9 +12,8 @@ import com.rayneo.arsdk.android.demo.ui.activity.DialogActivity
 import com.rayneo.arsdk.android.demo.ui.activity.FixedFocusPosRVActivity
 import com.rayneo.arsdk.android.demo.ui.activity.FragmentDemoActivity
 import com.rayneo.arsdk.android.demo.ui.activity.MovedFocusPosRVActivity
-import com.rayneo.arsdk.android.demo.ui.activity.MyActivity2
-import com.rayneo.arsdk.android.demo.ui.activity.MyTestActivity
 import com.rayneo.arsdk.android.demo.ui.activity.VideoPlayerActivity
+import com.rayneo.arsdk.android.demo.ui.activity.MyTestActivity
 import com.rayneo.arsdk.android.ui.toast.FToast
 import com.rayneo.arsdk.android.ui.util.FixPosFocusTracker
 import com.rayneo.arsdk.android.ui.util.FocusHolder
@@ -24,15 +23,19 @@ import com.rayneo.arsdk.android.touch.TempleAction
 import com.rayneo.arsdk.android.util.FLogger
 import com.rayneo.arsdk.android.ui.activity.BaseMirrorActivity
 import kotlinx.coroutines.launch
+import pw.binom.dto.NetworkService
+import pw.binom.logger.Logger
 import pw.binom.video.R
 
 class DemoHomeActivity : BaseMirrorActivity<LayoutDemoHomeBinding>() {
     private var fixPosFocusTracker: FixPosFocusTracker? = null
-
+    private val logger by Logger.ofThisOrGlobal
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initFocusTarget()
         initEvent()
+
+        NetworkService.start(this)
     }
 
     private fun initEvent() {
@@ -44,6 +47,7 @@ class DemoHomeActivity : BaseMirrorActivity<LayoutDemoHomeBinding>() {
                         is TempleAction.DoubleClick -> {
                             finish()
                         }
+
                         else -> fixPosFocusTracker?.handleFocusTargetEvent(it)
                     }
                 }
@@ -61,6 +65,7 @@ class DemoHomeActivity : BaseMirrorActivity<LayoutDemoHomeBinding>() {
                         is TempleAction.Click -> {
                             FToast.show("bt1 click")
                         }
+
                         else -> Unit
                     }
                 },
@@ -84,6 +89,7 @@ class DemoHomeActivity : BaseMirrorActivity<LayoutDemoHomeBinding>() {
                                     )
                                 )
                             }
+
                             else -> Unit
                         }
                     },
@@ -105,6 +111,7 @@ class DemoHomeActivity : BaseMirrorActivity<LayoutDemoHomeBinding>() {
                                     )
                                 )
                             }
+
                             else -> Unit
                         }
                     },
@@ -126,6 +133,7 @@ class DemoHomeActivity : BaseMirrorActivity<LayoutDemoHomeBinding>() {
                                     )
                                 )
                             }
+
                             else -> Unit
                         }
                     },
@@ -147,6 +155,7 @@ class DemoHomeActivity : BaseMirrorActivity<LayoutDemoHomeBinding>() {
                                     )
                                 )
                             }
+
                             else -> Unit
                         }
                     },
@@ -168,6 +177,7 @@ class DemoHomeActivity : BaseMirrorActivity<LayoutDemoHomeBinding>() {
                                     )
                                 )
                             }
+
                             else -> Unit
                         }
                     },
@@ -185,10 +195,11 @@ class DemoHomeActivity : BaseMirrorActivity<LayoutDemoHomeBinding>() {
                                 startActivity(
                                     Intent(
                                         this@DemoHomeActivity,
-                                        MyActivity2::class.java
+                                        VideoPlayerActivity::class.java
                                     )
                                 )
                             }
+
                             else -> Unit
                         }
                     },

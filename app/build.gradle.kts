@@ -56,7 +56,8 @@ dependencies {
     // 2. aar文件引入模式
     implementation(fileTree("libs"))
     implementation("androidx.appcompat:appcompat:1.3.0")
-    implementation(project(":client"))
+    implementation(project(":glasses"))
+    implementation(project(":deviceClient"))
     implementation("androidx.activity:activity-ktx:1.3.0-alpha08")
     implementation("androidx.recyclerview:recyclerview:1.1.0")
     // kotlin & coroutines

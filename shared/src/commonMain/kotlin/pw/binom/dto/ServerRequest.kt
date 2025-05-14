@@ -1,6 +1,7 @@
 package pw.binom.dto
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.protobuf.ProtoBuf
 import pw.binom.io.AsyncInput
 import pw.binom.io.AsyncOutput
@@ -8,7 +9,7 @@ import pw.binom.io.readBytes
 
 @Serializable
 data class ServerRequest(
-    val id: Int,
+    val id: String,
     val request: Boolean,
     val ok: OK? = null,
     val getLocalFiles: GetLocalFiles? = null,
@@ -21,7 +22,7 @@ data class ServerRequest(
     val updateView: UpdateView? = null,
 ) {
     companion object {
-        fun ok(id: Int) = ServerRequest(id = id, request = false, ok = OK)
+        fun ok(id: String) = ServerRequest(id = id, request = false, ok = OK)
         suspend fun read(input: AsyncInput): ServerRequest {
             val size = input.readInt()
             return ProtoBuf.decodeFromByteArray(serializer(), input.readBytes(size))
@@ -56,7 +57,7 @@ data class ServerRequest(
     data object GetState
 
     @Serializable
-    data class Seek(val time:Long)
+    data class Seek(val time: Long)
 
     @Serializable
     data class UpdateView(

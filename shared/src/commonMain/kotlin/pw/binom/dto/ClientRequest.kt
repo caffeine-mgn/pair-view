@@ -1,6 +1,7 @@
 package pw.binom.dto
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.protobuf.ProtoBuf
 import pw.binom.io.AsyncInput
 import pw.binom.io.AsyncOutput
@@ -31,7 +32,7 @@ data class ClientRequest(
     }
 
     @Serializable
-    object OK
+    data object OK
 
     @Serializable
     data class LocalFiles(val list: List<String>)

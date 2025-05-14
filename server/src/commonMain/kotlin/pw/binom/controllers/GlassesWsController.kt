@@ -6,11 +6,11 @@ import pw.binom.io.httpServer.HttpServerExchange
 import pw.binom.io.httpServer.acceptWebsocket
 import pw.binom.logger.Logger
 import pw.binom.logger.info
-import pw.binom.services.GlassesService
+import pw.binom.services.DevicesService
 import pw.binom.strong.inject
 
 class GlassesWsController : HttpHandler {
-    private val glassesService: GlassesService by inject()
+    private val devicesService: DevicesService by inject()
     private val logger by Logger.ofThisOrGlobal
     override suspend fun handle(exchange: HttpServerExchange) {
         logger.info("Income request ${exchange.requestMethod} ${exchange.requestURI}")
@@ -35,7 +35,7 @@ class GlassesWsController : HttpHandler {
         }
         val client = exchange.acceptWebsocket()
         try {
-            glassesService.processing(
+            devicesService.processing(
                 deviceId = deviceId,
                 deviceName = deviceName,
                 connection = client,

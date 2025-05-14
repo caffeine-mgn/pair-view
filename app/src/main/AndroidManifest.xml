@@ -10,7 +10,10 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:name="com.rayneo.arsdk.android.demo.MercuryDemoApplication"
@@ -43,6 +46,19 @@
             </intent-filter>
         </activity>
 
+        <service
+            android:name="pw.binom.dto.NetworkService"
+            android:enabled="true"
+            android:exported="false"></service>
+        <receiver
+            android:name="pw.binom.dto.StartReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name="com.rayneo.arsdk.android.demo.ui.activity.DialogActivity"
             android:screenOrientation="landscape" />
@@ -60,10 +76,6 @@
 
         <activity
             android:name="com.rayneo.arsdk.android.demo.ui.activity.VideoPlayerActivity"
-            android:screenOrientation="landscape" />
-
-        <activity
-            android:name="com.rayneo.arsdk.android.demo.ui.activity.MyActivity2"
             android:screenOrientation="landscape" />
         <activity
             android:name="com.rayneo.arsdk.android.demo.ui.activity.MyTestActivity"

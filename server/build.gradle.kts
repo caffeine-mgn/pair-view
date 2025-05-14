@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlinx.serialization)
-    id("com.github.johnrengelman.shadow") version "5.2.0"
+    alias(libs.plugins.johnrengelman.shadow)
 }
 
 kotlin {
@@ -9,9 +9,11 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":shared"))
+            implementation(project(":deviceShared"))
             implementation(libs.binom.io.strong.webServer)
             implementation(libs.binom.io.strong.properties.ini)
             implementation(libs.binom.io.strong.properties.yaml)
+            implementation(libs.binom.io.strong.nats.client)
             implementation(libs.binom.io.signal)
             implementation(libs.kotlinx.serialization.json)
         }

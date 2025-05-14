@@ -17,8 +17,9 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class VideoPlaybackControl(val player: Player, val videoFilesRoot: File) : PlaybackControl {
     private val logger by Logger.ofThisOrGlobal
+    var currentFile: String? = null
     override suspend fun getCurrentFile(): String? =
-        runOnUiAsync { player.currentMediaItem?.mediaMetadata?.mediaUri?.toFile()?.name }
+        runOnUiAsync { currentFile }
 
     override suspend fun getCurrentTime(): Long =
         runOnUiAsync { player.currentPosition }
@@ -29,6 +30,7 @@ class VideoPlaybackControl(val player: Player, val videoFilesRoot: File) : Playb
         runOnUiAsync { player.contentDuration }
 
     override fun open(file: String, time: Long) {
+        currentFile = file
         logger.infoSync("Opening file $file on time ${time.milliseconds}")
         runOnUi {
             player.setMediaItem(MediaItem.fromUri(Uri.fromFile(videoFilesRoot.resolve(file))))

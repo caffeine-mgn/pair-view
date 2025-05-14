@@ -1,0 +1,8 @@
+strong:
+  nats:
+    client:
+      host: nats.xx
+  server:
+    port: 8081
+  management:
+    port: 9091

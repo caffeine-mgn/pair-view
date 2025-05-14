@@ -6,13 +6,14 @@ import pw.binom.dto.GlassesDto
 import pw.binom.dto.JumpDto
 import pw.binom.dto.OpenFileDto
 import pw.binom.dto.PlaybackState
+import pw.binom.dto.Response
 import pw.binom.dto.UpdateViewDto
 import pw.binom.url.toURI
 
 object Api {
     suspend fun getClients() = Network.get(
         url = "/api/clients".toURI(),
-        responseSerializer = ListSerializer(GlassesDto.serializer())
+        responseSerializer = Response.serializer(ListSerializer(GlassesDto.serializer()))
     )
 
     suspend fun play(id: String) {
@@ -20,7 +21,7 @@ object Api {
             url = "/api/clients/${id}/actions/play".toURI(),
             request = Unit,
             requestSerializer = Unit.serializer(),
-            responseSerializer = Unit.serializer()
+            responseSerializer = Response.serializer(Unit.serializer())
         )
     }
 
@@ -29,20 +30,20 @@ object Api {
             url = "/api/clients/$id/actions/pause".toURI(),
             request = Unit,
             requestSerializer = Unit.serializer(),
-            responseSerializer = Unit.serializer()
+            responseSerializer = Response.serializer(Unit.serializer())
         )
     }
 
     suspend fun getFiles(id: String) =
         Network.get(
             url = "/api/clients/$id/files".toURI(),
-            responseSerializer = ListSerializer(String.serializer())
+            responseSerializer = Response.serializer(ListSerializer(String.serializer()))
         )
 
     suspend fun getState(id: String) =
         Network.get(
             url = "/api/clients/$id/state".toURI(),
-            responseSerializer = PlaybackState.serializer()
+            responseSerializer = Response.serializer(PlaybackState.serializer())
         )
 
     suspend fun openFile(id: String, file: String) {
@@ -52,7 +53,7 @@ object Api {
                 name = file
             ),
             requestSerializer = OpenFileDto.serializer(),
-            responseSerializer = Unit.serializer()
+            responseSerializer = Response.serializer(Unit.serializer())
         )
     }
 
@@ -63,7 +64,7 @@ object Api {
                 time = position
             ),
             requestSerializer = JumpDto.serializer(),
-            responseSerializer = Unit.serializer()
+            responseSerializer = Response.serializer(Unit.serializer())
         )
     }
 
@@ -79,7 +80,7 @@ object Api {
                 align = align,
             ),
             requestSerializer = UpdateViewDto.serializer(),
-            responseSerializer = Unit.serializer()
+            responseSerializer = Response.serializer(Unit.serializer()),
         )
     }
 }
