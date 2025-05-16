@@ -25,4 +25,10 @@ sealed interface RRequest {
 
     @Serializable
     data class Pause(val time: Duration?) : RRequest
+
+    @Serializable
+    data object GetState : RRequest
+
+    @Serializable
+    data object GetDeviceInfo : RRequest
 }

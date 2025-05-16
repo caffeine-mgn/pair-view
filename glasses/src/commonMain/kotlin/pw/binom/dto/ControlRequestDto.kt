@@ -42,4 +42,7 @@ sealed interface ControlRequestDto {
 
     @Serializable
     data object GetAvailableVideoFiles : ControlRequestDto
+
+    @Serializable
+    data object GetDeviceInfo : ControlRequestDto
 }

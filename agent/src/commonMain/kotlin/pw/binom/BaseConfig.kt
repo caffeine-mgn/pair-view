@@ -9,6 +9,7 @@ import pw.binom.strong.inject
 import pw.binom.strong.properties.StrongProperties
 import pw.binom.strong.properties.injectProperty
 import pw.binom.tools.ClearHistory
+import pw.binom.tools.DeviceInfoTool
 import pw.binom.tools.GetAvailableVideoFiles
 import pw.binom.tools.GetGlassesState
 import pw.binom.tools.PauseTool
@@ -35,6 +36,8 @@ fun BaseConfig(properties: StrongProperties) = Strong.config {
     it.bean { SeekDeltaTool() }
     it.bean { ClearHistory() }
     it.bean { DeviceClient() }
+    it.bean { DeviceInfoTool() }
+    it.bean { AudioService() }
     it.bean { d ->
         StrongLLM(lazy {
 

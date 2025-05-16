@@ -4,11 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import com.rayneo.arsdk.android.demo.ui.activity.VideoPlayerActivity
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.protobuf.ProtoBuf
 import pw.binom.DeviceClient.DeviceEventProcessor
 import pw.binom.LocalFileSystemManager
 import pw.binom.logger.Logger
 import pw.binom.logger.infoSync
+import kotlin.time.Duration.Companion.seconds
 
 class ServiceDeviceEventProcessor(
     val context: Context,
@@ -25,9 +28,11 @@ class ServiceDeviceEventProcessor(
         exchanger.unreg()
     }
 
-    private suspend fun sendAndReceive(cmd: RRequest): RResponse {
+    private suspend fun sendAndReceive(cmd: RRequest): RResponse? {
         val request = ProtoBuf.encodeToByteArray(RRequest.serializer(), cmd)
-        val response = exchanger.sendAndReceive(request)
+        val response = withTimeoutOrNull(5.seconds) {
+            exchanger.sendAndReceive(request)
+        } ?: return null
         return ProtoBuf.decodeFromByteArray(RResponse.serializer(), response)
     }
 
@@ -39,7 +44,7 @@ class ServiceDeviceEventProcessor(
         ByteArray(0)
     }
 
-    suspend fun processing(request: ControlRequestDto): ControlResponseDto =
+    suspend fun processing(request: ControlRequestDto): ControlResponseDto? =
         when (request) {
             is ControlRequestDto.Play -> {
                 if (!VideoPlayerActivity.isActive) {
@@ -100,14 +105,30 @@ class ServiceDeviceEventProcessor(
 
             is ControlRequestDto.GetState -> {
                 if (VideoPlayerActivity.isActive) {
+                    val state = sendAndReceive(
+                        RRequest.GetState
+                    ) as RResponse.State
                     ControlResponseDto.CurrentState.Video(
-                        isPlaying = VideoPlayerActivity.playingState,
-                        fileName = VideoPlayerActivity.currentPlayingFile,
-                        currentPosition = VideoPlayerActivity.currentPlayingTime,
-                        totalDuration = VideoPlayerActivity.currentPlayingTime,
+                        isPlaying = state.isPlaying,
+                        fileName = state.file,
+                        currentPosition = state.currentTime,
+                        totalDuration = state.totalDuration,
                     )
                 } else {
                     ControlResponseDto.CurrentState.NoneState
+                }
+            }
+
+            is ControlRequestDto.GetDeviceInfo -> {
+                val info = sendAndReceive(
+                    RRequest.GetDeviceInfo
+                ) as RResponse.DeviceInfo?
+                if (info != null) {
+                    ControlResponseDto.DeviceInfo(
+                        batteryLevel = info.batteryLevel,
+                    )
+                } else {
+                    null
                 }
             }
 
@@ -119,11 +140,15 @@ class ServiceDeviceEventProcessor(
             ControlRequestDto.CloseCurrentView -> ControlResponseDto.OK
         }
 
-    override suspend fun processing(msg: ByteArray): ByteArray {
+    override suspend fun processing(msg: ByteArray): ByteArray? {
         val request = ProtoBuf.decodeFromByteArray(ControlRequestDto.serializer(), msg)
         logger.infoSync("Income $request")
         val response = processing(request)
         logger.infoSync("Outcome $response")
-        return ProtoBuf.encodeToByteArray(ControlResponseDto.serializer(), response)
+        return if (response!=null) {
+            ProtoBuf.encodeToByteArray(ControlResponseDto.serializer(), response)
+        } else {
+            null
+        }
     }
 }

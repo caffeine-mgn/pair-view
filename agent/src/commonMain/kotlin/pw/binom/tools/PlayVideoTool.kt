@@ -31,7 +31,7 @@ class PlayVideoTool : AbstractGlassesTool<PlayVideoTool.Function, ControlRespons
     @SerialName("open_and_play_video_file")
     class Function(
         @Description("Name of file for play")
-        @JsonNames("filename", "file_name", "file_path", "path")
+        @JsonNames("filename","name", "file_name", "file_path", "path")
         val fileName: String,
     )
 }

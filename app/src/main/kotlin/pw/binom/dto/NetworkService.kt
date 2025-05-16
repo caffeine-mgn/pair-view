@@ -14,6 +14,7 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.widget.Toast
 import com.rayneo.arsdk.android.demo.DemoHomeActivity
+import com.rayneo.arsdk.android.demo.runOnUi
 import com.rayneo.arsdk.android.demo.ui.activity.VideoPlayerActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -46,7 +47,8 @@ class NetworkService : Service() {
             Intent(context, NetworkService::class.java).also {
                 it.action = actions.name
                 logger.infoSync("Starting the service in >=26 Mode")
-                context.startForegroundService(it)
+//                context.startForegroundService(it)
+                context.startService(it)
                 return
             }
         }
@@ -210,6 +212,9 @@ class NetworkService : Service() {
                     delay(10.seconds)
                     continue
                 }
+                runOnUi {
+                    Toast.makeText(this, "Connected to server!", Toast.LENGTH_SHORT).show()
+                }
                 try {
                     client.processing()
                 } catch (e: Throwable) {
@@ -217,6 +222,9 @@ class NetworkService : Service() {
                     e.printStackTrace()
                     continue
                 } finally {
+                    runOnUi {
+                        Toast.makeText(this, "Connection lost", Toast.LENGTH_SHORT).show()
+                    }
                     runCatching { client.asyncClose() }
                 }
             }
@@ -250,6 +258,12 @@ class NetworkService : Service() {
         )
         httpClient = cl
         networkManager = nm
+        nm.launch {
+            while (isActive) {
+                logger.infoSync("Steel active!")
+                delay(5.seconds)
+            }
+        }
         networkJob = nm.launch {
             processing()
         }

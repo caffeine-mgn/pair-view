@@ -27,7 +27,7 @@ class DeviceClient(
     val handler: DeviceEventProcessor,
 ) : AsyncCloseable {
     interface DeviceEventProcessor {
-        suspend fun processing(msg: ByteArray): ByteArray
+        suspend fun processing(msg: ByteArray): ByteArray?
     }
 
     companion object {
@@ -66,61 +66,62 @@ class DeviceClient(
             message.write(output)
         }
     }
-/*
-    suspend fun processing(request: ServerRequest): ClientRequest {
-        when {
-            request.getLocalFiles != null -> {
-                return ClientRequest(
-                    id = request.id,
-                    request = false,
-                    localFiles = ClientRequest.LocalFiles(handler.getLocalFiles())
-                )
-            }
 
-            request.play != null -> {
-                handler.play(request.play!!.time)
-                return ClientRequest.ok(request.id)
-            }
-
-            request.pause != null -> {
-                handler.pause(request.pause!!.time)
-                return ClientRequest.ok(request.id)
-            }
-
-            request.openVideoFile != null -> {
-                handler.openFile(request.openVideoFile!!.fileName, request.openVideoFile!!.time)
-                return ClientRequest.ok(request.id)
-            }
-
-            request.seek != null -> {
-                handler.seek(request.seek!!.time)
-                return ClientRequest.ok(request.id)
-            }
-
-            request.updateView != null -> {
-                val updateView = request.updateView!!
-                handler.updateView(
-                    padding = updateView.padding,
-                    align = updateView.align,
-                )
-                return ClientRequest.ok(request.id)
-            }
-
-            request.getState != null -> {
-                return ClientRequest(
-                    id = request.id,
-                    request = false,
-                    state = ClientRequest.State(
-                        videoFile = handler.getCurrentPlayingFile(),
-                        playing = handler.isPlayingStatus(),
-                        time = handler.getCurrentPlayingTime(),
+    /*
+        suspend fun processing(request: ServerRequest): ClientRequest {
+            when {
+                request.getLocalFiles != null -> {
+                    return ClientRequest(
+                        id = request.id,
+                        request = false,
+                        localFiles = ClientRequest.LocalFiles(handler.getLocalFiles())
                     )
-                )
+                }
+
+                request.play != null -> {
+                    handler.play(request.play!!.time)
+                    return ClientRequest.ok(request.id)
+                }
+
+                request.pause != null -> {
+                    handler.pause(request.pause!!.time)
+                    return ClientRequest.ok(request.id)
+                }
+
+                request.openVideoFile != null -> {
+                    handler.openFile(request.openVideoFile!!.fileName, request.openVideoFile!!.time)
+                    return ClientRequest.ok(request.id)
+                }
+
+                request.seek != null -> {
+                    handler.seek(request.seek!!.time)
+                    return ClientRequest.ok(request.id)
+                }
+
+                request.updateView != null -> {
+                    val updateView = request.updateView!!
+                    handler.updateView(
+                        padding = updateView.padding,
+                        align = updateView.align,
+                    )
+                    return ClientRequest.ok(request.id)
+                }
+
+                request.getState != null -> {
+                    return ClientRequest(
+                        id = request.id,
+                        request = false,
+                        state = ClientRequest.State(
+                            videoFile = handler.getCurrentPlayingFile(),
+                            playing = handler.isPlayingStatus(),
+                            time = handler.getCurrentPlayingTime(),
+                        )
+                    )
+                }
             }
+            return ClientRequest.ok(request.id)
         }
-        return ClientRequest.ok(request.id)
-    }
-*/
+    */
     suspend fun processing() {
         sendingChannel.start(coroutineContext)
         try {
@@ -129,7 +130,9 @@ class DeviceClient(
                     WsMessage.read(msg)
                 }
                 val resp = handler.processing(req.data)
-                sendingChannel.push(WsMessage(id = req.id, data = resp))
+                if (resp != null) {
+                    sendingChannel.push(WsMessage(id = req.id, data = resp))
+                }
             }
         } finally {
             sendingChannel.close()

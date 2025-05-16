@@ -25,6 +25,11 @@ sealed interface ControlResponseDto {
     data class Files(val message: List<String>) : ControlResponseDto
 
     @Serializable
+    data class DeviceInfo(
+        val batteryLevel: Int,
+    ) : ControlResponseDto
+
+    @Serializable
     sealed interface CurrentState : ControlResponseDto {
 
         @Serializable

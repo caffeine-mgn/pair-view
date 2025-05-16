@@ -1,9 +1,15 @@
 package pw.binom
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import pw.binom.http.client.HttpClientRunnable
+import pw.binom.io.file.File
+import pw.binom.io.file.openWrite
+import pw.binom.io.use
+import pw.binom.io.useAsync
 import pw.binom.logger.Logger
 import pw.binom.logger.info
+import pw.binom.network.exceptions.ConnectionRefusedException
 import pw.binom.properties.AppProperties
 import pw.binom.strong.BeanLifeCycle
 import pw.binom.strong.inject
@@ -13,10 +19,13 @@ import pw.binom.telegram.dto.Message
 import pw.binom.telegram.dto.ParseMode
 import pw.binom.telegram.dto.SendChatEvent
 import pw.binom.telegram.dto.TextMessage
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class TelegramService {
     private val httpClient: HttpClientRunnable by inject()
     private val chatService: ChatService by inject()
+    private val audioService: AudioService by inject()
     private val appProperties: AppProperties by injectProperty()
     private val logger by Logger.ofThisOrGlobal
 
@@ -29,33 +38,120 @@ class TelegramService {
 
     private suspend fun messageProcessing(message: Message): String? {
         logger.info("Income $message")
-        val text = message.text ?: return null
-        return chatService.incomeMessageProcessing(
-            chatId = message.chat.id,
-            incomeMessageText = text,
-        )
+        return when {
+            message.text != null -> chatService.incomeMessageProcessing(
+                chatId = message.chat!!.id,
+                incomeMessageText = message.text!!,
+            )
+
+            message.voice != null -> {
+                println("Income voice message... getting path")
+                val filePath = withRetry {
+                    telegram.getFile(message.voice!!.fileId).filePath!!
+                }
+                println("Path got! $filePath. Try to download...")
+                val resultText = withRetry {
+                    try {
+                        telegram.downloadFile(filePath).useAsync { telegramVoiceStream ->
+                            audioService.speechToText(
+                                model = "arminhaberl/faster-whisper-medium",
+                                temperature = 0.2f,
+                                vadFilter = false,
+                                language = "ru",
+                                input = telegramVoiceStream
+                            )
+                        }
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                        throw e
+                    }
+                }
+                println("File was read: $resultText")
+                chatService.incomeMessageProcessing(
+                    chatId = message.chat!!.id,
+                    incomeMessageText = resultText,
+                )
+            }
+            else->null
+        }
+//        val text = message.text ?: return null
+//        return chatService.incomeMessageProcessing(
+//            chatId = message.chat.id,
+//            incomeMessageText = text,
+//        )
     }
+
+    suspend fun <T> withRetry(
+        count: Int = 5,
+        delay: Duration = 10.seconds,
+        func: suspend () -> T,
+    ): T {
+        var count = count
+        var ex: Throwable? = null
+        while (count > 0) {
+            try {
+                return func()
+            } catch (_: Throwable) {
+                count--
+                delay(delay)
+            }
+        }
+        checkNotNull(ex) { "Exception is null" }
+        throw ex
+    }
+
 
     init {
         BeanLifeCycle.process {
             while (isActive) {
                 logger.info("Request updates....")
                 try {
-                    telegram.getUpdate().forEach {
+                    val incomes = withRetry(count = 30) {
+                        telegram.getUpdate()
+                    }
+                    incomes.forEach {
                         val message = it.message ?: return@forEach
-                        telegram.sendChatAction(
-                            chatId = message.chat.id.toString(),
-                            action = SendChatEvent.Action.TYPING,
-                        )
-                        val resp = messageProcessing(message) ?: return@forEach
-
-                        telegram.sendMessage(
-                            TextMessage(
-                                chatId = message.chat.id.toString(),
-                                text = resp,
-                                parseMode = ParseMode.MARKDOWN,
+                        withRetry(count = 30) {
+                            telegram.sendChatAction(
+                                chatId = message.chat!!.id.toString(),
+                                action = SendChatEvent.Action.TYPING,
                             )
-                        )
+                        }
+                        val resp = messageProcessing(message) ?: return@forEach
+                        withRetry(count = 30) {
+                            try {
+                                logger.info("Try convert \"$resp\" to text...")
+                                audioService.textToSpeech(
+                                    data = AudioService.TextToSpeechDto(
+                                        input = resp,
+                                        responseFormat = AudioService.ResponseFormat.MP3,
+                                        model = "rhasspy/piper-voices",
+//                                        language = "ru-RU",
+                                        voice = "ru_RU-irina-medium",
+                                    )
+                                ).useAsync { input ->
+                                    logger.info("Output done. Sending to TG")
+                                    var size = 0L
+                                    telegram.sendVoice(
+                                        chatId = message.chat!!.id.toString(),
+                                        caption = resp,
+                                    ) { output ->
+                                        size = input.copyTo(output)
+                                    }
+                                    logger.info("Voice message done! filesize: $size")
+                                }
+                            } catch (e: Throwable) {
+                                e.printStackTrace()
+                                throw e
+                            }
+//                            telegram.sendMessage(
+//                                TextMessage(
+//                                    chatId = message.chat.id.toString(),
+//                                    text = resp,
+//                                    parseMode = ParseMode.MARKDOWN,
+//                                )
+//                            )
+                        }
                     }
                 } catch (e: Throwable) {
                     e.printStackTrace()

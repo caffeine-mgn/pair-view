@@ -1,5 +1,6 @@
 package com.rayneo.arsdk.android.demo
 
+import android.Manifest
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -24,6 +25,7 @@ import com.rayneo.arsdk.android.util.FLogger
 import com.rayneo.arsdk.android.ui.activity.BaseMirrorActivity
 import kotlinx.coroutines.launch
 import pw.binom.dto.NetworkService
+import pw.binom.dto.requestPermissions
 import pw.binom.logger.Logger
 import pw.binom.video.R
 
@@ -32,6 +34,15 @@ class DemoHomeActivity : BaseMirrorActivity<LayoutDemoHomeBinding>() {
     private val logger by Logger.ofThisOrGlobal
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        requestPermissions(
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_PRIVILEGED,
+        )
         initFocusTarget()
         initEvent()
 
@@ -45,7 +56,8 @@ class DemoHomeActivity : BaseMirrorActivity<LayoutDemoHomeBinding>() {
                     FLogger.i("DemoActivity", "action = $it")
                     when (it) {
                         is TempleAction.DoubleClick -> {
-                            finish()
+//                            finish()
+                            moveTaskToBack(false)
                         }
 
                         else -> fixPosFocusTracker?.handleFocusTargetEvent(it)

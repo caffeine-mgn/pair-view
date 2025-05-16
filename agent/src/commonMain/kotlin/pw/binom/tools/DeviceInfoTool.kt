@@ -7,6 +7,8 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNames
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import pw.binom.Description
 import pw.binom.dto.ControlRequestDto
 import pw.binom.dto.ControlResponseDto
@@ -16,25 +18,25 @@ import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-class SeekDeltaTool : AbstractGlassesTool<SeekDeltaTool.Function, ControlResponseDto.OK>() {
+class DeviceInfoTool :
+    AbstractGlassesTool<DeviceInfoTool.Function, ControlResponseDto.DeviceInfo>() {
     override val function: KSerializer<Function>
         get() = Function.serializer()
-    override val validResponse: KClass<ControlResponseDto.OK>
-        get() = ControlResponseDto.OK::class
+    override val validResponse
+        get() = ControlResponseDto.DeviceInfo::class
 
     override suspend fun generateRequest(arguments: Function): ControlRequestDto =
-        ControlRequestDto.SeekDelta(arguments.position.seconds)
+        ControlRequestDto.GetDeviceInfo
+
+    override suspend fun toLLMResult(resp: ControlResponseDto.DeviceInfo): JsonElement =
+        ok(JsonObject(mapOf("battery_level_in_percent" to JsonPrimitive(resp.batteryLevel))))
 
     @Description(
-        "Changes the playback time of the current playback.\n" +
-                "Changes the playback time relative to the absolute."
+        "Returns device info\n" +
+                "Info:\n" +
+                "- battery level in percent"
     )
     @Serializable
-    @SerialName("change_relative_time_for_current_playback")
-    data class Function(
-        @Description("Playback position. In seconds")
-        @JsonNames("time_in_seconds", "position", "seconds")
-        @SerialName("time")
-        val position: Long,
-    )
+    @SerialName("get_device_info")
+    data object Function
 }

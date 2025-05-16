@@ -16,12 +16,12 @@ class MercuryDemoApplication : Application() {
         Logger.global.handler = AndroidLogHandler
         logger.infoSync("Start Application")
         MercurySDK.init(this)
-        NetworkService.start(this)
+//        NetworkService.start(this)
     }
 
     override fun onTerminate() {
         logger.infoSync("Stop Application")
-        NetworkService.stop(this)
+//        NetworkService.stop(this)
         super.onTerminate()
     }
 }

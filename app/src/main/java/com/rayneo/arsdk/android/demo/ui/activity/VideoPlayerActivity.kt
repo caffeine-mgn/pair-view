@@ -1,15 +1,12 @@
 package com.rayneo.arsdk.android.demo.ui.activity
 
 import android.Manifest
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.SurfaceTexture
 import android.graphics.SurfaceTexture.OnFrameAvailableListener
 import android.net.Uri
 import android.opengl.GLES20
+import android.os.BatteryManager
 import android.os.Bundle
 import android.util.Log
 import android.view.Surface
@@ -91,6 +88,7 @@ class VideoPlayerActivity : AbstractVideoActivity() {
 
     private var mainDisplaySurface: WindowSurface? = null
     private var secondaryDisplaySurface: WindowSurface? = null
+    private var currentVideoFile: String? = null
 
     var sizePadding = -100
 
@@ -107,50 +105,6 @@ class VideoPlayerActivity : AbstractVideoActivity() {
     private lateinit var localFileSystemManager: LocalFileSystemManager
     private lateinit var exchanger: ExchangeService
 
-    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val bundle = intent.extras ?: return
-            val action = bundle.getString(ACTION)
-            logger.infoSync("Income action: $action")
-            logger.infoSync("bundle: $bundle")
-            when (action) {
-                ACTION_SEEK -> {
-                    val time = bundle.getLong(TIME) * 1000
-                    logger.infoSync("Seek to $time seconds")
-                    player.seekTo(time)
-                }
-
-                ACTION_SEEK_DELTA -> {
-                    player.seekTo(player.currentPosition + bundle.getLong(TIME) * 1000)
-                }
-
-                ACTION_PLAY -> {
-                    player.seekTo(bundle.getLong(TIME) * 1000)
-                    player.play()
-                }
-
-                ACTION_PAUSE -> {
-                    player.pause()
-                    player.seekTo(bundle.getLong(TIME) * 1000)
-                }
-
-                ACTION_OPEN_FILE -> {
-                    val fileName = bundle.getString(FILE) ?: TODO()
-                    player.setMediaItem(
-                        MediaItem.fromUri(
-                            Uri.fromFile(
-                                obbDir.resolve("video").resolve(fileName)
-                            )
-                        )
-                    )
-                    player.playWhenReady = true
-                }
-
-                else -> logger.infoSync("Unknown action \"$action\"")
-            }
-        }
-    }
-
     //    val pathStr = "/storage/self/primary/DCIM/Camera/VID_20250404_124518.mp4"
 //    val pathStr = "/storage/self/primary/Video/test.mp4"
 //    val pathStr = "/storage/emulated/0/videos/test.mp4"
@@ -165,8 +119,6 @@ class VideoPlayerActivity : AbstractVideoActivity() {
     override fun onResume() {
         logger.infoSync("onResume")
         isActive = true
-        receiver
-        registerReceiver(receiver, IntentFilter(VIDEO_PLAYER_CHANNEL))
         exchanger.reg()
         super.onResume()
     }
@@ -181,6 +133,7 @@ class VideoPlayerActivity : AbstractVideoActivity() {
                         )
                     )
                 )
+                currentVideoFile = request.fileName
                 player.playWhenReady = true
                 RResponse.OK
             }
@@ -206,6 +159,28 @@ class VideoPlayerActivity : AbstractVideoActivity() {
                 player.seekTo(request.time.inWholeMilliseconds + player.currentPosition)
                 RResponse.OK
             }
+
+            RRequest.GetState -> {
+                RResponse.State(
+                    file = currentVideoFile,
+                    totalDuration = player.duration.milliseconds,
+                    currentTime = player.currentPosition.milliseconds,
+                    isPlaying = player.isPlaying,
+                )
+            }
+
+            is RRequest.GetDeviceInfo -> {
+                try {
+                    val bm = getSystemService(BATTERY_SERVICE) as BatteryManager
+                    val batLevel = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                    RResponse.DeviceInfo(
+                        batteryLevel = batLevel,
+                    )
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                    throw e
+                }
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -217,7 +192,9 @@ class VideoPlayerActivity : AbstractVideoActivity() {
             selfChannel = Channels.VIDEO_ACTIVITY,
         ) { data ->
             val income = ProtoBuf.decodeFromByteArray(RRequest.serializer(), data)
+            logger.infoSync("Income $income")
             val resp = incomeCommand(income)
+            logger.infoSync("Outcome $resp")
             ProtoBuf.encodeToByteArray(RResponse.serializer(), resp)
         }
 
@@ -267,6 +244,7 @@ class VideoPlayerActivity : AbstractVideoActivity() {
             )
             playWhenReady = true
         }
+        currentVideoFile = fileName
         logger.infoSync("Opening file $fileName")
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
@@ -472,7 +450,6 @@ class VideoPlayerActivity : AbstractVideoActivity() {
 
     override fun onPause() {
         exchanger.unreg()
-        unregisterReceiver(receiver)
         Log.i("DemoActivity", "PAUSE!")
         logger.infoSync("onPause")
         isActive = false

@@ -14,4 +14,5 @@ data class AppProperties(
     val lmStudioUrl: String,
     val glassesServiceUrl: String,
     val deviceCommandTimeout: Duration = 10.seconds,
+    val voiceServiceUrl: String,
 )
