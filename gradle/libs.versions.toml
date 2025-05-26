@@ -22,15 +22,19 @@ binom-io-strong-webServer = { module = "pw.binom.io:strong-web-server", version.
 binom-io-strong-properties-yaml = { module = "pw.binom.io:strong-properties-yaml", version.ref = "binom-io" }
 binom-io-strong-properties-ini = { module = "pw.binom.io:strong-properties-ini", version.ref = "binom-io" }
 binom-io-strong-nats-client = { module = "pw.binom.io:strong-nats-client", version.ref = "binom-io" }
+binom-io-strong-application = { module = "pw.binom.io:strong-application", version.ref = "binom-io" }
 binom-io-signal = { module = "pw.binom.io:signal", version.ref = "binom-io" }
 binom-io-logger = { module = "pw.binom.io:logger", version.ref = "binom-io" }
 binom-io-kmigrator = { module = "pw.binom.io:kmigrator", version.ref = "binom-io" }
 binom-io-postgresql = { module = "pw.binom.io:postgresql-async", version.ref = "binom-io" }
+binom-io-xml-core = { module = "pw.binom.io:xml", version.ref = "binom-io" }
 binom-io-db-serialization-core = { module = "pw.binom.io:db-serialization", version.ref = "binom-io" }
+binom-io-s3-client = { module = "pw.binom.io:s3", version.ref = "binom-io" }
 binom-io-http-client = { module = "pw.binom.io:httpClient", version.ref = "binom-io" }
 binom-io-http-ssl = { module = "pw.binom.io:http-ssl", version.ref = "binom-io" }
 binom-io-http-server-rest = { module = "pw.binom.io:http-server-rest", version.ref = "binom-io" }
 binom-io-network = { module = "pw.binom.io:network", version.ref = "binom-io" }
+device-telegram = {module = "pw.binom.device.telegram:shared", version="41"}
 
 [plugins]
 johnrengelman-shadow = { id = "com.github.johnrengelman.shadow", version = "5.2.0" }

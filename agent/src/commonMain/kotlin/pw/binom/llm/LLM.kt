@@ -16,7 +16,7 @@ interface LLM {
 
         data class System(override val content: String) : Message, TextContent
         data class User(override val content: String) : Message, TextContent
-        data class Assistant(override val content: String) : Message, TextContent
+        data class Assistant(override val content: String, val think: String?) : Message, TextContent
         data class ToolResult(val id: String, val content: String) : Message
         data class AssistantToolCall(val calls: List<FunctionCall>) : Message
     }

@@ -18,9 +18,14 @@ kotlin {
             implementation(libs.binom.io.db.serialization.core)
             implementation(libs.binom.io.kmigrator)
             implementation(libs.binom.io.http.ssl)
+            implementation(libs.binom.io.xml.core)
+            implementation(libs.binom.io.s3.client)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.binom.telegram)
             implementation(libs.binom.io.strong.nats.client)
+            implementation(libs.binom.io.strong.application)
+            implementation(libs.device.telegram)
+            implementation(libs.binom.io.nats)
         }
         jvmMain.dependencies {
             implementation("io.github.givimad:whisper-jni:1.7.1")

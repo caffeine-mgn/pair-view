@@ -10,7 +10,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import pw.binom.io.AsyncAppendable
-import pw.binom.io.asAsync
 
 abstract class AbstractOpenApi : LLM {
     protected fun String.encodeJson() =
@@ -60,6 +59,19 @@ abstract class AbstractOpenApi : LLM {
                         .append("}")
                 }
                 out.append("]}")
+            }
+
+            is LLM.Message.Assistant -> {
+                out.append("{")
+                    .append("\"role\": \"").append(message.role).append("\"")
+                    .append(",\"content\":")
+                val content = if (message.think.isNullOrBlank()) {
+                    message.content
+                } else {
+                    "<think>${message.think}</think>${message.content}"
+                }
+                out.append(content.encodeJson())
+                out.append("}")
             }
 
             is LLM.Message.TextContent -> {

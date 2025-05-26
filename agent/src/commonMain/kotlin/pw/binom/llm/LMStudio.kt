@@ -43,6 +43,7 @@ class LMStudio(val url: URL, val client: HttpClientRunnable) : AbstractOpenApi()
             messages = messages,
             out = sb.asAsync(),
         )
+        println("dialog:\n$sb")
 
         val text = ex.useAsync { con ->
             con.getOutput().bufferedWriter().useAsync { out ->

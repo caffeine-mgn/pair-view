@@ -1,7 +1,10 @@
 package pw.binom
 
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import pw.binom.http.client.HttpClientRunnable
 import pw.binom.io.file.File
 import pw.binom.io.file.openWrite
@@ -9,6 +12,7 @@ import pw.binom.io.use
 import pw.binom.io.useAsync
 import pw.binom.logger.Logger
 import pw.binom.logger.info
+import pw.binom.network.NetworkManager
 import pw.binom.network.exceptions.ConnectionRefusedException
 import pw.binom.properties.AppProperties
 import pw.binom.strong.BeanLifeCycle
@@ -19,10 +23,13 @@ import pw.binom.telegram.dto.Message
 import pw.binom.telegram.dto.ParseMode
 import pw.binom.telegram.dto.SendChatEvent
 import pw.binom.telegram.dto.TextMessage
+import pw.binom.telegram.dto.Update
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class TelegramService {
+    private val networkManager: NetworkManager by inject()
     private val httpClient: HttpClientRunnable by inject()
     private val chatService: ChatService by inject()
     private val audioService: AudioService by inject()
@@ -72,7 +79,8 @@ class TelegramService {
                     incomeMessageText = resultText,
                 )
             }
-            else->null
+
+            else -> null
         }
 //        val text = message.text ?: return null
 //        return chatService.incomeMessageProcessing(
@@ -81,44 +89,45 @@ class TelegramService {
 //        )
     }
 
-    suspend fun <T> withRetry(
-        count: Int = 5,
-        delay: Duration = 10.seconds,
-        func: suspend () -> T,
-    ): T {
-        var count = count
-        var ex: Throwable? = null
-        while (count > 0) {
-            try {
-                return func()
-            } catch (_: Throwable) {
-                count--
-                delay(delay)
-            }
-        }
-        checkNotNull(ex) { "Exception is null" }
-        throw ex
-    }
-
-
     init {
         BeanLifeCycle.process {
+            withRetry(30) {
+                telegram.deleteWebhook()
+            }
             while (isActive) {
-                logger.info("Request updates....")
                 try {
+
                     val incomes = withRetry(count = 30) {
-                        telegram.getUpdate()
+                        val timeout = 1.minutes
+                        withTimeoutOrNull(timeout) {
+                            telegram.getUpdate(timeout = timeout.inWholeSeconds)
+                        } ?: emptyList()
                     }
                     incomes.forEach {
                         val message = it.message ?: return@forEach
-                        withRetry(count = 30) {
-                            telegram.sendChatAction(
-                                chatId = message.chat!!.id.toString(),
-                                action = SendChatEvent.Action.TYPING,
-                            )
+
+                        val typingAction = networkManager.launch {
+                            while (isActive) {
+                                withRetry(count = 30) {
+                                    telegram.sendChatAction(
+                                        chatId = message.chat!!.id.toString(),
+                                        action = SendChatEvent.Action.TYPING,
+                                    )
+                                }
+                                delay(5.seconds)
+                            }
                         }
-                        val resp = messageProcessing(message) ?: return@forEach
+
+                        val resp = try {
+                            messageProcessing(message) ?: return@forEach
+                        } catch (e: Throwable) {
+                            e.printStackTrace()
+                            throw e
+                        } finally {
+                            typingAction.cancel()
+                        }
                         withRetry(count = 30) {
+                            /*
                             try {
                                 logger.info("Try convert \"$resp\" to text...")
                                 audioService.textToSpeech(
@@ -144,13 +153,14 @@ class TelegramService {
                                 e.printStackTrace()
                                 throw e
                             }
-//                            telegram.sendMessage(
-//                                TextMessage(
-//                                    chatId = message.chat.id.toString(),
-//                                    text = resp,
-//                                    parseMode = ParseMode.MARKDOWN,
-//                                )
-//                            )
+                            */
+                            telegram.sendMessage(
+                                TextMessage(
+                                    chatId = message.chat!!.id.toString(),
+                                    text = resp,
+                                    parseMode = ParseMode.HTML,
+                                )
+                            )
                         }
                     }
                 } catch (e: Throwable) {

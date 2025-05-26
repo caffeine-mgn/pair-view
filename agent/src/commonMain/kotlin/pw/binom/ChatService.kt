@@ -25,7 +25,11 @@ class ChatService {
                 val r = when {
                     msg.system != null -> LLM.Message.System(msg.system.content)
                     msg.user != null -> LLM.Message.User(msg.user.content)
-                    msg.assistant != null -> LLM.Message.Assistant(msg.assistant.content)
+                    msg.assistant != null -> LLM.Message.Assistant(
+                        content = msg.assistant.content,
+                        think = msg.assistant.think
+                    )
+
                     msg.assistantToolCall != null -> {
                         val calls = msg.assistantToolCall.calls.map { call ->
                             LLM.FunctionCall(
@@ -97,8 +101,9 @@ class ChatService {
                         charId = chatId,
                         listOf(
                             MessageContent(
-                                assistant = MessageContent.TextMessage(
+                                assistant = MessageContent.TextWithThinksMessage(
                                     content = llmResult.content,
+                                    think = llmResult.thinking,
                                 )
                             )
                         )

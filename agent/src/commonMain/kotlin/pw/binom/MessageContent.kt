@@ -1,18 +1,23 @@
 package pw.binom
 
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.Serializable
-import pw.binom.llm.LLM.Message
-import pw.binom.llm.LLM.Message.TextContent
 
 @Serializable
 data class MessageContent(
     val system: TextMessage? = null,
     val user: TextMessage? = null,
-    val assistant: TextMessage? = null,
+    val assistant: TextWithThinksMessage? = null,
     val assistantToolCall: AssistantToolCall? = null,
     val toolResult: ToolResult? = null,
+) {
+    @Serializable
+    data class TextWithThinksMessage(
+        val content: String,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val think: String? = null,
+    )
 
-    ) {
     @Serializable
     data class TextMessage(val content: String)
 
