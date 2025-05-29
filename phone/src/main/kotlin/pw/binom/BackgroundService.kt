@@ -13,7 +13,6 @@ import android.support.v4.media.session.MediaSessionCompat
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.KSerializer
-import pw.binom.Methods.ServiceState
 import pw.binom.logger.Logger
 import pw.binom.logger.infoSync
 import pw.binom.phone.dto.PhoneEvent
@@ -64,7 +63,7 @@ class BackgroundService : AbstractNetworkService<PhoneRequest, PhoneResponse, Ph
         super.onCreate()
         control.addCommitedListener {
             networkManager.launch {
-                sendEvent(PhoneEvent.Completed)
+                sendEvent(PhoneEvent.Finished)
             }
         }
         control.addPlayingChangeListener { status, time ->

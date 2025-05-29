@@ -43,6 +43,7 @@ import pw.binom.glasses.Methods
 import pw.binom.glasses.NetworkService
 import pw.binom.glasses.REvent
 import pw.binom.glasses.RResponse
+import pw.binom.glasses.dto.GlassesResponse
 import pw.binom.logger.infoSync
 import kotlin.math.absoluteValue
 import kotlin.time.Duration
@@ -477,6 +478,13 @@ class VideoPlayerActivity : AbstractVideoActivity() {
         super.onPause()
     }
 
+    private fun buildState() = GlassesResponse.State(
+        currentFile = controller!!.currentFile?.name,
+        time = controller!!.currentTime,
+        totalTime = controller!!.totalDuration,
+        isPlaying = controller!!.isPlaying
+    )
+
     private fun event(event: TempleAction) {
         Log.i("DemoActivity", "action = $event")
         when (event) {
@@ -485,22 +493,18 @@ class VideoPlayerActivity : AbstractVideoActivity() {
             }
 
             is TempleAction.Click -> {
-                GlobalScope.launch {
-                    if (controller!!.isPlaying) {
-                        controller!!.pause()
-                    } else {
-                        controller!!.play()
-                    }
+                if (controller!!.isPlaying) {
+                    eventPublisher.publish(REvent.IntentionPause(buildState()))
+                } else {
+                    eventPublisher.publish(REvent.IntentionPlay(buildState()))
                 }
             }
 
-            is TempleAction.SlideBackward -> GlobalScope.launch {
-                controller!!.seek(controller!!.currentTime - 5.seconds)
-            }
+            is TempleAction.SlideBackward ->
+                eventPublisher.publish(REvent.IntentionSeekNext(buildState()))
 
-            is TempleAction.SlideForward -> GlobalScope.launch {
-                controller!!.seek(controller!!.currentTime + 5.seconds)
-            }
+            is TempleAction.SlideForward ->
+                eventPublisher.publish(REvent.IntentionSeekNext(buildState()))
 
             else -> {
 

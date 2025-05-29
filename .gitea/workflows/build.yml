@@ -1,0 +1,17 @@
+name: 'Test Go Action'
+on:
+  release:
+    types: [published]
+jobs:
+  deploy-dev:
+    name: 'Deploy to dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: https://github.com/actions/checkout@v4
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Publishing Gradle
+        uses: https://git.binom.pw/subochev/devops/publish@main
+        with:
+          version: ${{ gitea.ref_name }}

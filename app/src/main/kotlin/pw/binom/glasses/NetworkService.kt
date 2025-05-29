@@ -26,6 +26,7 @@ import pw.binom.ExchangeService
 import pw.binom.dto.Actions
 import pw.binom.glasses.RRequest.*
 import pw.binom.glasses.dto.GlassesEvent
+import pw.binom.glasses.dto.GlassesEvent.*
 import pw.binom.glasses.dto.GlassesRequest
 import pw.binom.glasses.dto.GlassesResponse
 import pw.binom.glasses.dto.GlassesResponse.*
@@ -77,7 +78,11 @@ class NetworkService : AbstractNetworkService<GlassesRequest, GlassesResponse, G
             is REvent.Play -> GlassesEvent.Play(event.time)
             is REvent.Seek -> GlassesEvent.Seek(event.time)
             is REvent.Finished -> GlassesEvent.Finished
-            is REvent.Open -> GlassesEvent.Open(event.file)
+            is REvent.Open -> Open(event.file)
+            is REvent.IntentionPause -> GlassesEvent.IntentionPause(event.state)
+            is REvent.IntentionPlay -> GlassesEvent.IntentionPlay(event.state)
+            is REvent.IntentionSeekBack -> GlassesEvent.IntentionSeekBack(event.state)
+            is REvent.IntentionSeekNext -> GlassesEvent.IntentionSeekNext(event.state)
         }
         GlobalScope.launch(networkManager) { sendEvent(glassesEvent) }
     }

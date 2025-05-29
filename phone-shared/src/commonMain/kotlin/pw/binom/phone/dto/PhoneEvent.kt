@@ -9,8 +9,8 @@ import kotlin.time.Duration
 @JsonClassDiscriminator("type")
 sealed interface PhoneEvent {
     @Serializable
-    @SerialName("completed")
-    object Completed : PhoneEvent
+    @SerialName("finished")
+    object Finished : PhoneEvent
 
     @Serializable
     @SerialName("play")

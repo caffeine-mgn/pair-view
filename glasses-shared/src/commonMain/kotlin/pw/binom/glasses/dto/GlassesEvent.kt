@@ -8,9 +8,6 @@ import kotlin.time.Duration
 @Serializable
 @JsonClassDiscriminator("type")
 sealed interface GlassesEvent {
-    @Serializable
-    @SerialName("completed")
-    object Completed : GlassesEvent
 
     @Serializable
     @SerialName("play")
@@ -31,4 +28,20 @@ sealed interface GlassesEvent {
     @Serializable
     @SerialName("open")
     data class Open(val file: String) : GlassesEvent
+
+    @Serializable
+    @SerialName("intention_pause")
+    data class IntentionPause(val state: GlassesResponse.State) : GlassesEvent
+
+    @Serializable
+    @SerialName("intention_play")
+    data class IntentionPlay(val state: GlassesResponse.State) : GlassesEvent
+
+    @Serializable
+    @SerialName("intention_seek_next")
+    data class IntentionSeekNext(val state: GlassesResponse.State) : GlassesEvent
+
+    @Serializable
+    @SerialName("intention_seek_back")
+    data class IntentionSeekBack(val state: GlassesResponse.State) : GlassesEvent
 }

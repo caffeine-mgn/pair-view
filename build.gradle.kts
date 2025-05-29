@@ -6,6 +6,13 @@ plugins {
     alias(libs.plugins.kotlinx.serialization) apply false
 }
 
+allprojects {
+    if (version == "unspecified") {
+        version = "1.0.0-SNAPSHOT"
+    }
+    group = "pw.binom.device.android"
+}
+
 //tasks {
 //    val clean by register<Delete>("clean") {
 //        delete(rootProject.layout.buildDirectory)

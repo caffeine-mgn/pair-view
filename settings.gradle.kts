@@ -1,8 +1,10 @@
 pluginManagement {
     repositories {
+        mavenLocal()
+        mavenCentral()
+        maven(url = "https://repo.binom.pw")
         gradlePluginPortal()
         google()
-        mavenCentral()
     }
 }
 dependencyResolutionManagement {
