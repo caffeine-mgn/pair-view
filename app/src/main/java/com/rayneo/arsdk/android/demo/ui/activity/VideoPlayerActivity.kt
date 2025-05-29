@@ -34,11 +34,14 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import pw.binom.ContextVariableHolder
+import pw.binom.EventBroadcast
+import pw.binom.ExchangeService
 import pw.binom.FileManager
 import pw.binom.SimpleExoPlayerController
 import pw.binom.glasses.AbstractVideoActivity
 import pw.binom.glasses.Methods
 import pw.binom.glasses.NetworkService
+import pw.binom.glasses.REvent
 import pw.binom.glasses.RResponse
 import pw.binom.logger.infoSync
 import kotlin.math.absoluteValue
@@ -71,6 +74,15 @@ class VideoPlayerActivity : AbstractVideoActivity() {
     }
 
     private val contextVariableHolder = ContextVariableHolder(this)
+
+    private val eventPublisher by contextVariableHolder.define { ctx ->
+        EventBroadcast.publisher(
+            context = ctx,
+            channel = NetworkService.EVENTS,
+            serializer = REvent.serializer()
+        )
+    }
+
     private lateinit var playerView: PlayerView
     private lateinit var surfaceView: SurfaceView
     private lateinit var root: RelativeLayout
@@ -94,7 +106,7 @@ class VideoPlayerActivity : AbstractVideoActivity() {
     }
 
     private val exchange by contextVariableHolder.define { ctx ->
-        val service = pw.binom.ExchangeService(
+        val service = ExchangeService(
             context = ctx,
             broadcastChannel = NetworkService.CHANNEL,
             server = false,
@@ -289,6 +301,24 @@ class VideoPlayerActivity : AbstractVideoActivity() {
 //        )
 //        root.updateViewLayout()
         initMethods()
+
+        controller!!.addSeekListener { time ->
+            eventPublisher.publish(REvent.Seek(time))
+        }
+        controller!!.addPlayingChangeListener { status, time ->
+            val event = if (status) {
+                REvent.Play(time)
+            } else {
+                REvent.Pause(time)
+            }
+            eventPublisher.publish(event)
+        }
+        controller!!.addCommitedListener {
+            eventPublisher.publish(REvent.Finished)
+        }
+        controller!!.addOpenListener { file ->
+            eventPublisher.publish(REvent.Open(file))
+        }
     }
 
 
@@ -302,10 +332,6 @@ class VideoPlayerActivity : AbstractVideoActivity() {
         val paddingAbs = sizePadding.absoluteValue
         val paddingRatio = (ww - paddingAbs).toDouble() / ww.toDouble()
 
-        Log.i(
-            "MyActivity2",
-            "Video Size: ${player.videoSize.height.toDouble()} x ${player.videoSize.width.toDouble()}"
-        )
         Log.i("MyActivity2", "Video ratio: $ratio")
 
         val resultHH = (hh * ratio * paddingRatio).toInt()
@@ -348,10 +374,6 @@ class VideoPlayerActivity : AbstractVideoActivity() {
 //        player.mi
         surfaceView.refreshDrawableState()
         playerView.refreshDrawableState()
-        Log.i(
-            "MyActivity",
-            "Render first frame! player.videoSize=${player.videoSize.width}x${player.videoSize.height}"
-        )
     }
 
     private val surfaceViewHolderCallback = object : SurfaceHolder.Callback {

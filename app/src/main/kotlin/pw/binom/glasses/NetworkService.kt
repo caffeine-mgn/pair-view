@@ -1,6 +1,5 @@
 package pw.binom.glasses
 
-import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -20,9 +19,9 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.KSerializer
 import pw.binom.AbstractNetworkService
+import pw.binom.EventBroadcast
 import pw.binom.ExchangeService
 import pw.binom.dto.Actions
 import pw.binom.glasses.RRequest.*
@@ -34,13 +33,12 @@ import pw.binom.logger.Logger
 import pw.binom.logger.infoSync
 import pw.binom.startService
 import pw.binom.video.R
-import kotlin.reflect.KClass
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class NetworkService : AbstractNetworkService<GlassesRequest, GlassesResponse, GlassesEvent>() {
     companion object {
         const val CHANNEL = "glasses.video"
+        const val EVENTS = "glasses.events"
         private val logger = Logger.Companion.getLogger("NetworkService.Companion")
         private fun control(context: Context, actions: Actions) {
             Intent(context, NetworkService::class.java).also {
@@ -62,6 +60,26 @@ class NetworkService : AbstractNetworkService<GlassesRequest, GlassesResponse, G
 
         fun isStarted(context: Context) =
             context.isServiceRunning(NetworkService::class.java)
+    }
+
+    private val eventListener by define { ctx ->
+        EventBroadcast.listener(
+            context = ctx,
+            channel = EVENTS,
+            serializer = REvent.serializer(),
+            handler = this@NetworkService::incomeEvent
+        )
+    }
+
+    private fun incomeEvent(event: REvent) {
+        val glassesEvent = when (event) {
+            is REvent.Pause -> GlassesEvent.Pause(event.time)
+            is REvent.Play -> GlassesEvent.Play(event.time)
+            is REvent.Seek -> GlassesEvent.Seek(event.time)
+            is REvent.Finished -> GlassesEvent.Finished
+            is REvent.Open -> GlassesEvent.Open(event.file)
+        }
+        GlobalScope.launch(networkManager) { sendEvent(glassesEvent) }
     }
 
     private val exchange by define { ctx ->

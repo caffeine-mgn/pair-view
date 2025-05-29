@@ -14,5 +14,8 @@ interface MediaControl {
     suspend fun pause()
     suspend fun seek(time: Duration)
 
+    fun addOpenListener(func: (String) -> Unit): Closeable
     fun addCommitedListener(func: () -> Unit): Closeable
+    fun addPlayingChangeListener(func: (playing: Boolean, time: Duration) -> Unit): Closeable
+    fun addSeekListener(func: (time: Duration) -> Unit): Closeable
 }

@@ -21,6 +21,14 @@ sealed interface GlassesEvent {
     data class Pause(val time: Duration) : GlassesEvent
 
     @Serializable
+    @SerialName("seek")
+    data class Seek(val time: Duration) : GlassesEvent
+
+    @Serializable
+    @SerialName("finished")
+    data object Finished : GlassesEvent
+
+    @Serializable
     @SerialName("open")
     data class Open(val file: String) : GlassesEvent
 }

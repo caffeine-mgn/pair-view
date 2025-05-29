@@ -5,6 +5,8 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import pw.binom.io.Closeable
 import pw.binom.logger.infoSync
 import java.io.File
+import kotlin.collections.minusAssign
+import kotlin.collections.plusAssign
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -31,6 +33,9 @@ class MediaPlayerControl : MediaControl, Closeable {
         get() = internalCurrentFile.load()
 
     private val commitedListeners = HashSet<() -> Unit>()
+    private val openListeners = HashSet<(String) -> Unit>()
+    private val playStatusListeners = HashSet<(Boolean, Duration) -> Unit>()
+    private val seekListeners = HashSet<(Duration) -> Unit>()
 
     private fun setEventListeners(player: MediaPlayer) {
         player.setOnPreparedListener {
@@ -38,6 +43,9 @@ class MediaPlayerControl : MediaControl, Closeable {
         }
         player.setOnSeekCompleteListener {
             seekEnd.fire(Unit)
+            seekListeners.forEach {
+                it(player.currentPosition.milliseconds)
+            }
         }
         player.setOnCompletionListener {
             completion.fire(Unit)
@@ -75,14 +83,27 @@ class MediaPlayerControl : MediaControl, Closeable {
             player.prepareAsync()
         }
         internalCurrentFile.store(file)
+        openListeners.forEach {
+            it(file.name)
+        }
     }
 
     override suspend fun play() {
-        currentPlayer.load()?.start() ?: throw IllegalStateException("No file for replay")
+        val currentPlayer =
+            currentPlayer.load() ?: throw IllegalStateException("No file for replay")
+        currentPlayer.start()
+        playStatusListeners.forEach {
+            it(true, currentPlayer.currentPosition.milliseconds)
+        }
     }
 
     override suspend fun pause() {
-        currentPlayer.load()?.pause() ?: throw IllegalStateException("No file for replay")
+        val currentPlayer =
+            currentPlayer.load() ?: throw IllegalStateException("No file for replay")
+        currentPlayer.pause() ?: throw IllegalStateException("No file for replay")
+        playStatusListeners.forEach {
+            it(false, currentPlayer.currentPosition.milliseconds)
+        }
     }
 
     override suspend fun seek(time: Duration) {
@@ -101,10 +122,31 @@ class MediaPlayerControl : MediaControl, Closeable {
         }
     }
 
+    override fun addOpenListener(func: (String) -> Unit): Closeable {
+        openListeners += func
+        return Closeable {
+            openListeners -= func
+        }
+    }
+
     override fun addCommitedListener(func: () -> Unit): Closeable {
         commitedListeners += func
         return Closeable {
             commitedListeners -= func
+        }
+    }
+
+    override fun addPlayingChangeListener(func: (Boolean, Duration) -> Unit): Closeable {
+        playStatusListeners += func
+        return Closeable {
+            playStatusListeners -= func
+        }
+    }
+
+    override fun addSeekListener(func: (Duration) -> Unit): Closeable {
+        seekListeners += func
+        return Closeable {
+            seekListeners -= func
         }
     }
 

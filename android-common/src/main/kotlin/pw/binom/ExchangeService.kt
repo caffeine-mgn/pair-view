@@ -126,10 +126,4 @@ class ExchangeService(
             }
         }
     }
-
-    private fun Context.sendEvent(channel: String, func: Intent.() -> Unit) {
-        val intent = Intent(channel)
-        func(intent)
-        sendBroadcast(intent)
-    }
 }

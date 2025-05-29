@@ -67,6 +67,26 @@ class BackgroundService : AbstractNetworkService<PhoneRequest, PhoneResponse, Ph
                 sendEvent(PhoneEvent.Completed)
             }
         }
+        control.addPlayingChangeListener { status, time ->
+            networkManager.launch {
+                val ev = if (status) {
+                    PhoneEvent.Play(time)
+                } else {
+                    PhoneEvent.Pause(time)
+                }
+                sendEvent(ev)
+            }
+        }
+        control.addSeekListener { time ->
+            networkManager.launch {
+                sendEvent(PhoneEvent.Seek(time))
+            }
+        }
+        control.addOpenListener { file ->
+            networkManager.launch {
+                sendEvent(PhoneEvent.Open(file))
+            }
+        }
         exchange.implements(Methods.getServiceStatus) {
             Methods.ServiceState(
                 running = true,
@@ -201,7 +221,6 @@ class BackgroundService : AbstractNetworkService<PhoneRequest, PhoneResponse, Ph
                 }
                 control.open(audio)
                 logger.infoSync("Open")
-                sendEvent(PhoneEvent.Open(audio.name))
                 PhoneResponse.OK
             }
 
@@ -211,7 +230,6 @@ class BackgroundService : AbstractNetworkService<PhoneRequest, PhoneResponse, Ph
                     control.seek(param.time!!)
                 }
                 logger.infoSync("Pause")
-                sendEvent(PhoneEvent.Pause(control.currentTime))
                 PhoneResponse.OK
             }
 
@@ -221,7 +239,6 @@ class BackgroundService : AbstractNetworkService<PhoneRequest, PhoneResponse, Ph
                 }
                 control.play()
                 logger.infoSync("Play")
-                sendEvent(PhoneEvent.Play(control.currentTime))
                 PhoneResponse.OK
             }
 

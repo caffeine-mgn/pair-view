@@ -10,11 +10,12 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import pw.binom.io.Closeable
 import pw.binom.logger.Logger
-import pw.binom.logger.info
 import pw.binom.logger.infoSync
 import pw.binom.logger.warnSync
 import java.io.File
 import java.io.FileNotFoundException
+import kotlin.collections.minusAssign
+import kotlin.collections.plusAssign
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.resume
@@ -52,6 +53,9 @@ class SimpleExoPlayerController(val player: SimpleExoPlayer) : MediaControl {
     private val playing = OneShortListeners<Boolean>()
     private val completion = OneShortListeners<Unit>()
     private var internalCurrentFile = AtomicReference<File?>(null)
+    private val playStatusListeners = HashSet<(Boolean, Duration) -> Unit>()
+    private val seekListeners = HashSet<(Duration) -> Unit>()
+    private val openListeners = HashSet<(String) -> Unit>()
 
     private val listener = object : Player.Listener {
         override fun onSeekProcessed() {
@@ -97,6 +101,10 @@ class SimpleExoPlayerController(val player: SimpleExoPlayer) : MediaControl {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             logger.infoSync("onIsPlayingChanged: isPlaying=$isPlaying")
             playing.fire(isPlaying)
+            val currentPosition = player.currentPosition.milliseconds
+            playStatusListeners.forEach {
+                it(isPlaying, currentPosition)
+            }
         }
 
         override fun onRenderedFirstFrame() {
@@ -133,6 +141,9 @@ class SimpleExoPlayerController(val player: SimpleExoPlayer) : MediaControl {
             }
         }
         internalCurrentFile.store(file)
+        openListeners.forEach {
+            it(file.name)
+        }
     }
 
     override suspend fun play() {
@@ -158,6 +169,16 @@ class SimpleExoPlayerController(val player: SimpleExoPlayer) : MediaControl {
             runOnUi {
                 player.seekTo(time.inWholeMilliseconds)
             }
+            seekListeners.forEach {
+                it(time)
+            }
+        }
+    }
+
+    override fun addOpenListener(func: (String) -> Unit): Closeable {
+        openListeners += func
+        return Closeable {
+            openListeners -= func
         }
     }
 
@@ -165,6 +186,21 @@ class SimpleExoPlayerController(val player: SimpleExoPlayer) : MediaControl {
         commitedListeners += func
         return Closeable {
             commitedListeners -= func
+        }
+    }
+
+
+    override fun addPlayingChangeListener(func: (Boolean, Duration) -> Unit): Closeable {
+        playStatusListeners += func
+        return Closeable {
+            playStatusListeners -= func
+        }
+    }
+
+    override fun addSeekListener(func: (Duration) -> Unit): Closeable {
+        seekListeners += func
+        return Closeable {
+            seekListeners -= func
         }
     }
 }

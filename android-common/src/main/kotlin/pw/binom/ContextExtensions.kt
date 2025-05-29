@@ -12,3 +12,9 @@ fun Context.startService(serviceClass: KClass<*>, start: Boolean) {
         return
     }
 }
+
+fun Context.sendEvent(channel: String, func: Intent.() -> Unit) {
+    val intent = Intent(channel)
+    func(intent)
+    sendBroadcast(intent)
+}

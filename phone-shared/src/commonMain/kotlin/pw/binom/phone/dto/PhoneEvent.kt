@@ -21,6 +21,10 @@ sealed interface PhoneEvent {
     data class Pause(val time: Duration) : PhoneEvent
 
     @Serializable
+    @SerialName("seek")
+    data class Seek(val time: Duration) : PhoneEvent
+
+    @Serializable
     @SerialName("open")
     data class Open(val file: String) : PhoneEvent
 }
