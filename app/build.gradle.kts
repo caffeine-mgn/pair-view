@@ -28,7 +28,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "../proguard-rules.pro"
             )
         }
     }
@@ -52,12 +52,15 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.3.0")
     implementation("com.google.android.material:material:1.8.0")
     implementation("com.google.android.exoplayer:exoplayer:2.17.1")
+    implementation(project(":android-common"))
+    implementation(libs.device.shared)
 
     // 2. aar文件引入模式
     implementation(fileTree("libs"))
     implementation("androidx.appcompat:appcompat:1.3.0")
     implementation(project(":glasses"))
-    implementation(project(":deviceClient"))
+    implementation(project(":glasses-shared"))
+//    implementation(project(":deviceClient"))
     implementation("androidx.activity:activity-ktx:1.3.0-alpha08")
     implementation("androidx.recyclerview:recyclerview:1.1.0")
     // kotlin & coroutines

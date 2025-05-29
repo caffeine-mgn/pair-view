@@ -1,0 +1,117 @@
+package pw.binom
+
+import android.media.MediaPlayer
+import kotlinx.coroutines.suspendCancellableCoroutine
+import pw.binom.io.Closeable
+import pw.binom.logger.infoSync
+import java.io.File
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+
+@OptIn(ExperimentalAtomicApi::class)
+class MediaPlayerControl : MediaControl, Closeable {
+
+    private val prepared = OneShortListeners<Unit>()
+    private val seekEnd = OneShortListeners<Unit>()
+    private val error = OneShortListeners<Unit>()
+    private val completion = OneShortListeners<Unit>()
+
+    override val currentTime: Duration
+        get() = currentPlayer.load()?.currentPosition?.milliseconds ?: Duration.ZERO
+    override val totalDuration: Duration
+        get() = currentPlayer.load()?.duration?.milliseconds ?: Duration.ZERO
+    override val isPlaying: Boolean
+        get() = currentPlayer.load()?.isPlaying ?: false
+    override val currentFile: File?
+        get() = internalCurrentFile.load()
+
+    private val commitedListeners = HashSet<() -> Unit>()
+
+    private fun setEventListeners(player: MediaPlayer) {
+        player.setOnPreparedListener {
+            prepared.fire(Unit)
+        }
+        player.setOnSeekCompleteListener {
+            seekEnd.fire(Unit)
+        }
+        player.setOnCompletionListener {
+            completion.fire(Unit)
+            commitedListeners.forEach {
+                it()
+            }
+        }
+        player.setOnErrorListener { mp, what, extra ->
+            error.fire(Unit)
+            true
+        }
+    }
+
+    private var internalCurrentFile = AtomicReference<File?>(null)
+    private var currentPlayer = AtomicReference<MediaPlayer?>(null)
+
+    override suspend fun open(file: File) {
+        if (internalCurrentFile.load() != null) {
+            currentPlayer.load()?.also {
+                it.stop()
+                it.release()
+            }
+        }
+        suspendCancellableCoroutine<Unit> { con ->
+            val w = EventWaiter()
+            con.invokeOnCancellation {
+                w.cancel()
+            }
+            w.wait(prepared) { con.resume(Unit) }
+            w.wait(error) { con.resumeWithException(IllegalStateException("Can't open file")) }
+            val player = MediaPlayer()
+            currentPlayer.store(player)
+            setEventListeners(player)
+            player.setDataSource(file.absolutePath)
+            player.prepareAsync()
+        }
+        internalCurrentFile.store(file)
+    }
+
+    override suspend fun play() {
+        currentPlayer.load()?.start() ?: throw IllegalStateException("No file for replay")
+    }
+
+    override suspend fun pause() {
+        currentPlayer.load()?.pause() ?: throw IllegalStateException("No file for replay")
+    }
+
+    override suspend fun seek(time: Duration) {
+        val currentPlayer =
+            currentPlayer.load() ?: throw IllegalStateException("No file for replay")
+        suspendCancellableCoroutine<Unit> { con ->
+            val w = EventWaiter()
+            con.invokeOnCancellation {
+                w.cancel()
+            }
+            w.wait(seekEnd) {
+                con.resume(Unit)
+            }
+            w.wait(error) { con.resumeWithException(IllegalStateException("Can't seek")) }
+            currentPlayer.seekTo(time.inWholeMilliseconds.toInt())
+        }
+    }
+
+    override fun addCommitedListener(func: () -> Unit): Closeable {
+        commitedListeners += func
+        return Closeable {
+            commitedListeners -= func
+        }
+    }
+
+    override fun close() {
+        currentPlayer.load()?.also {
+            it.stop()
+            it.release()
+        }
+    }
+}

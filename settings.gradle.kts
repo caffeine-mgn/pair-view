@@ -16,9 +16,13 @@ dependencyResolutionManagement {
 }
 rootProject.name = "RayNeoARSDKAndroidDemo"
 include(":app")
+include(":phone")
+include(":phone-shared")
+include(":android-common")
 include(":shared")
-include(":deviceClient")
+//include(":deviceClient")
 include(":server")
+include(":glasses-shared")
 include(":deviceShared")
 include(":agent")
 include(":glasses")

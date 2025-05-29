@@ -1,17 +1,15 @@
 package pw.binom.dto
-
+/*
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import androidx.core.net.toFile
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
-import com.rayneo.arsdk.android.demo.runOnUi
-import com.rayneo.arsdk.android.demo.runOnUiAsync
-import pw.binom.PlaybackControl
 import pw.binom.logger.Logger
 import pw.binom.logger.info
 import pw.binom.logger.infoSync
+import pw.binom.runOnUiAsync
 import java.io.File
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -57,3 +55,5 @@ class VideoPlaybackControl(val player: Player, val videoFilesRoot: File) : Playb
         }
     }
 }
+
+ */

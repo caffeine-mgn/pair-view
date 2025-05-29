@@ -24,8 +24,8 @@ import com.rayneo.arsdk.android.touch.TempleAction
 import com.rayneo.arsdk.android.util.FLogger
 import com.rayneo.arsdk.android.ui.activity.BaseMirrorActivity
 import kotlinx.coroutines.launch
-import pw.binom.dto.NetworkService
-import pw.binom.dto.requestPermissions
+import pw.binom.glasses.NetworkService
+import pw.binom.glasses.requestPermissions
 import pw.binom.logger.Logger
 import pw.binom.video.R
 

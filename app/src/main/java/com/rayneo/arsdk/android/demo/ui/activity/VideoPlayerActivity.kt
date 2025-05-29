@@ -4,9 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.SurfaceTexture
 import android.graphics.SurfaceTexture.OnFrameAvailableListener
-import android.net.Uri
 import android.opengl.GLES20
-import android.os.BatteryManager
 import android.os.Bundle
 import android.util.Log
 import android.view.Surface
@@ -30,24 +28,23 @@ import com.rayneo.arsdk.android.demo.EglCore
 import com.rayneo.arsdk.android.demo.FullFrameRect
 import com.rayneo.arsdk.android.demo.Texture2dProgram
 import com.rayneo.arsdk.android.demo.WindowSurface
-import com.rayneo.arsdk.android.demo.runOnUi
 import com.rayneo.arsdk.android.touch.TempleAction
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.serialization.protobuf.ProtoBuf
-import pw.binom.LocalFileSystemManager
-import pw.binom.ViewManager
-import pw.binom.dto.AbstractVideoActivity
-import pw.binom.dto.Channels
-import pw.binom.dto.Config
-import pw.binom.dto.ExchangeService
-import pw.binom.dto.RRequest
-import pw.binom.dto.RResponse
-import pw.binom.dto.redraw
-import pw.binom.logger.Logger
+import kotlinx.coroutines.runBlocking
+import pw.binom.ContextVariableHolder
+import pw.binom.FileManager
+import pw.binom.SimpleExoPlayerController
+import pw.binom.glasses.AbstractVideoActivity
+import pw.binom.glasses.Methods
+import pw.binom.glasses.NetworkService
+import pw.binom.glasses.RResponse
 import pw.binom.logger.infoSync
 import kotlin.math.absoluteValue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 
 class VideoPlayerActivity : AbstractVideoActivity() {
@@ -73,7 +70,7 @@ class VideoPlayerActivity : AbstractVideoActivity() {
             private set
     }
 
-    private val logger by Logger.ofThisOrGlobal
+    private val contextVariableHolder = ContextVariableHolder(this)
     private lateinit var playerView: PlayerView
     private lateinit var surfaceView: SurfaceView
     private lateinit var root: RelativeLayout
@@ -92,25 +89,42 @@ class VideoPlayerActivity : AbstractVideoActivity() {
 
     var sizePadding = -100
 
-    private val viewManager = ViewManager { padding, align ->
-        sizePadding = padding
-        runOnUi {
-            resize()
-            playerView.redraw()
-            surfaceView.redraw()
-        }
+    private val fileManager by contextVariableHolder.define {
+        FileManager(it)
     }
 
+    private val exchange by contextVariableHolder.define { ctx ->
+        val service = pw.binom.ExchangeService(
+            context = ctx,
+            broadcastChannel = NetworkService.CHANNEL,
+            server = false,
+        )
+        service.reg()
+        service
+    }.destroyWith {
+        it.unreg()
+    }
+
+    /*
+        private val viewManager = ViewManager { padding, align ->
+            sizePadding = padding
+            runOnUi {
+                resize()
+                playerView.redraw()
+                surfaceView.redraw()
+            }
+        }
+    */
     private var surface: Surface? = null
-    private lateinit var localFileSystemManager: LocalFileSystemManager
-    private lateinit var exchanger: ExchangeService
 
     //    val pathStr = "/storage/self/primary/DCIM/Camera/VID_20250404_124518.mp4"
 //    val pathStr = "/storage/self/primary/Video/test.mp4"
 //    val pathStr = "/storage/emulated/0/videos/test.mp4"
 //    val path = Uri.fromFile(File(pathStr))
 
-    private lateinit var config: Config
+
+    private var controller: SimpleExoPlayerController? = null
+
     override fun onStart() {
         super.onStart()
         isActive = true
@@ -119,92 +133,58 @@ class VideoPlayerActivity : AbstractVideoActivity() {
     override fun onResume() {
         logger.infoSync("onResume")
         isActive = true
-        exchanger.reg()
         super.onResume()
     }
 
-    private fun incomeCommand(request: RRequest): RResponse =
-        when (request) {
-            is RRequest.OpenVideoFile -> {
-                player.setMediaItem(
-                    MediaItem.fromUri(
-                        Uri.fromFile(
-                            obbDir.resolve("video").resolve(request.fileName)
-                        )
-                    )
-                )
-                currentVideoFile = request.fileName
-                player.playWhenReady = true
-                RResponse.OK
-            }
-
-            is RRequest.Pause -> {
-                player.pause()
-                request.time?.let { player.seekTo(it.inWholeMilliseconds) }
-                RResponse.OK
-            }
-
-            is RRequest.Play -> {
-                request.time?.let { player.seekTo(it.inWholeMilliseconds) }
-                player.play()
-                RResponse.OK
-            }
-
-            is RRequest.Seek -> {
-                player.seekTo(request.time.inWholeMilliseconds)
-                RResponse.OK
-            }
-
-            is RRequest.SeekDelta -> {
-                player.seekTo(request.time.inWholeMilliseconds + player.currentPosition)
-                RResponse.OK
-            }
-
-            RRequest.GetState -> {
-                RResponse.State(
-                    file = currentVideoFile,
-                    totalDuration = player.duration.milliseconds,
-                    currentTime = player.currentPosition.milliseconds,
-                    isPlaying = player.isPlaying,
-                )
-            }
-
-            is RRequest.GetDeviceInfo -> {
-                try {
-                    val bm = getSystemService(BATTERY_SERVICE) as BatteryManager
-                    val batLevel = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-                    RResponse.DeviceInfo(
-                        batteryLevel = batLevel,
-                    )
-                } catch (e: Throwable) {
-                    e.printStackTrace()
-                    throw e
-                }
-            }
+    private fun initMethods() {
+        val controller = controller!!
+        exchange.implements(Methods.play) {
+            controller.play()
+            RResponse.OK
         }
+        exchange.implements(Methods.pause) {
+            controller.pause()
+            RResponse.OK
+        }
+        exchange.implements(Methods.seek) {
+            controller.seek(it.time)
+            RResponse.OK
+        }
+        exchange.implements(Methods.getState) {
+            RResponse.State(
+                file = controller.currentFile?.name,
+                totalDuration = controller.totalDuration,
+                currentTime = controller.currentTime,
+                isPlaying = controller.isPlaying,
+            )
+        }
+        exchange.implements(Methods.seekDelta) {
+            try {
+                controller.seek(it.time + controller.currentTime)
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+            RResponse.OK
+        }
+        exchange.implements(Methods.openFile) {
+            logger.infoSync("Opening file ${it.fileName}...")
+            controller.open(fileManager.resolve(it.fileName))
+            if (it.time != null) {
+                controller.seek(it.time)
+            }
+            RResponse.OK
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        contextVariableHolder.create()
         isActive = true
 
-        exchanger = ExchangeService(
-            context = this,
-            broadcastChannel = Channels.NETWORK_SERVICE,
-            selfChannel = Channels.VIDEO_ACTIVITY,
-        ) { data ->
-            val income = ProtoBuf.decodeFromByteArray(RRequest.serializer(), data)
-            logger.infoSync("Income $income")
-            val resp = incomeCommand(income)
-            logger.infoSync("Outcome $resp")
-            ProtoBuf.encodeToByteArray(RResponse.serializer(), resp)
-        }
-
         logger.infoSync("onCreate")
-        localFileSystemManager = LocalFileSystemManager(obbDir)
         val b = intent.extras
-        val fileName = b?.getString("file") ?: TODO()
-        val time = b?.getLong("time") ?: 0L
+//        val fileName = b?.getString("file") ?: TODO()
+//        val time = b?.getLong("time") ?: 0L
 
-        config = Config.open(this)
         super.onCreate(savedInstanceState)
         Log.i("MyActivity2", "CREATED!")
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -237,15 +217,16 @@ class VideoPlayerActivity : AbstractVideoActivity() {
         root = RelativeLayout(this)
 
         player = SimpleExoPlayer.Builder(this).build().apply {
-            setMediaItem(
-                MediaItem.fromUri(
-                    obbDir.resolve("video").resolve(fileName).toURI().toURL().toString()
-                )
-            )
+//            setMediaItem(
+//                MediaItem.fromUri(
+//                    obbDir.resolve("video").resolve(fileName).toURI().toURL().toString()
+//                )
+//            )
             playWhenReady = true
         }
-        currentVideoFile = fileName
-        logger.infoSync("Opening file $fileName")
+        controller = SimpleExoPlayerController(player)
+//        currentVideoFile = fileName
+//        logger.infoSync("Opening file $fileName")
         player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
                 super.onPlayerError(error)
@@ -307,6 +288,7 @@ class VideoPlayerActivity : AbstractVideoActivity() {
 //            deviceName = config.name,
 //        )
 //        root.updateViewLayout()
+        initMethods()
     }
 
 
@@ -449,7 +431,6 @@ class VideoPlayerActivity : AbstractVideoActivity() {
     }
 
     override fun onPause() {
-        exchanger.unreg()
         Log.i("DemoActivity", "PAUSE!")
         logger.infoSync("onPause")
         isActive = false
@@ -482,18 +463,31 @@ class VideoPlayerActivity : AbstractVideoActivity() {
             }
 
             is TempleAction.Click -> {
-                if (player.isPlaying) {
-                    player.pause()
-                } else {
-                    player.play()
+                GlobalScope.launch {
+                    if (controller!!.isPlaying) {
+                        controller!!.pause()
+                    } else {
+                        controller!!.play()
+                    }
                 }
             }
 
-            is TempleAction.SlideBackward -> player.seekTo(player.currentPosition - 5_000)
-            is TempleAction.SlideForward -> player.seekTo(player.currentPosition + 5_000)
+            is TempleAction.SlideBackward -> GlobalScope.launch {
+                controller!!.seek(controller!!.currentTime - 5.seconds)
+            }
+
+            is TempleAction.SlideForward -> GlobalScope.launch {
+                controller!!.seek(controller!!.currentTime + 5.seconds)
+            }
+
             else -> {
 
             }
         }
+    }
+
+    override fun onDestroy() {
+        contextVariableHolder.destroy()
+        super.onDestroy()
     }
 }

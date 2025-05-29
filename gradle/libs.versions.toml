@@ -6,8 +6,12 @@ kotlinx-coroutines = "1.10.2"
 telegram = "1.0.0-SNAPSHOT"
 android = "8.9.2"
 compose-plugin = "1.8.0"
+androidx-compose-bom = "2025.05.00"
+androidx-activity-compose = "1.10.1"
+android-material3 = "1.13.0-alpha13"
 
 [libraries]
+device-shared = { module = "pw.binom.device.ws:device-shared", version = "29" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
@@ -35,6 +39,9 @@ binom-io-http-ssl = { module = "pw.binom.io:http-ssl", version.ref = "binom-io" 
 binom-io-http-server-rest = { module = "pw.binom.io:http-server-rest", version.ref = "binom-io" }
 binom-io-network = { module = "pw.binom.io:network", version.ref = "binom-io" }
 device-telegram = {module = "pw.binom.device.telegram:shared", version="41"}
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "androidx-compose-bom" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 
 [plugins]
 johnrengelman-shadow = { id = "com.github.johnrengelman.shadow", version = "5.2.0" }

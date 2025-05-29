@@ -1,5 +1,5 @@
 package pw.binom.dto
-
+/*
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -9,6 +9,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.protobuf.ProtoBuf
 import pw.binom.DeviceClient.DeviceEventProcessor
 import pw.binom.LocalFileSystemManager
+import pw.binom.glasses.Channels
+import pw.binom.glasses.RRequest
+import pw.binom.glasses.RResponse
 import pw.binom.logger.Logger
 import pw.binom.logger.infoSync
 import kotlin.time.Duration.Companion.seconds
@@ -152,3 +155,4 @@ class ServiceDeviceEventProcessor(
         }
     }
 }
+*/

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
+import pw.binom.glasses.sendEvent
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi

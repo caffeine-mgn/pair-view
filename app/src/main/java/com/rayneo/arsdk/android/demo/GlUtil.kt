@@ -27,10 +27,12 @@ object GlUtil {
     fun createProgram(vertexSource: String?, fragmentSource: String?): Int {
         val vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexSource)
         if (vertexShader == 0) {
+            error("Can't create Vertex Shader")
             return 0
         }
         val pixelShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentSource)
         if (pixelShader == 0) {
+            error("Can't create Pixel Shader")
             return 0
         }
 
